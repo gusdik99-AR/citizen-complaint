@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AduanController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman utama
@@ -17,3 +19,12 @@ Route::middleware('guest')->group(function () {
 
 // Logout route - Authenticated only
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Aduan routes - Authenticated users only
+Route::middleware(\App\Http\Middleware\CheckAuth::class)->group(function () {
+    Route::get('/aduan/create', [AduanController::class, 'create'])->name('aduan.create');
+    Route::post('/aduan', [AduanController::class, 'store'])->name('aduan.store');
+
+    // Location API
+    Route::post('/api/reverse-geocode', [LocationController::class, 'reverseGeocode'])->name('api.reverse-geocode');
+});

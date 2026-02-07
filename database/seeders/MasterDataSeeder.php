@@ -41,8 +41,61 @@ class MasterDataSeeder extends Seeder
             DB::table('akses_aduan')->insert($akses);
         }
 
+        // 3. Kategori Aduan
+        $kategoriAduan = [
+            [
+                'nama_kategori' => 'Infrastruktur Jalan',
+                'keterangan' => 'Laporan terkait jalan rusak, berlubang, atau perlu perbaikan',
+            ],
+            [
+                'nama_kategori' => 'Penerangan Jalan',
+                'keterangan' => 'Laporan lampu jalan mati atau rusak',
+            ],
+            [
+                'nama_kategori' => 'Sampah & Kebersihan',
+                'keterangan' => 'Laporan terkait sampah menumpuk, kebersihan lingkungan',
+            ],
+            [
+                'nama_kategori' => 'Air Bersih',
+                'keterangan' => 'Laporan terkait masalah air PAM atau air bersih',
+            ],
+            [
+                'nama_kategori' => 'Drainase & Saluran',
+                'keterangan' => 'Laporan saluran air tersumbat, banjir, genangan',
+            ],
+            [
+                'nama_kategori' => 'Fasilitas Umum',
+                'keterangan' => 'Laporan terkait taman, Terminal, pasar, dll',
+            ],
+            [
+                'nama_kategori' => 'Keamanan & Ketertiban',
+                'keterangan' => 'Laporan terkait keamanan lingkungan, premanisme',
+            ],
+            [
+                'nama_kategori' => 'Kesehatan',
+                'keterangan' => 'Laporan terkait pelayanan kesehatan, Puskesmas, RS',
+            ],
+            [
+                'nama_kategori' => 'Pendidikan',
+                'keterangan' => 'Laporan terkait fasilitas sekolah, pelayanan pendidikan',
+            ],
+            [
+                'nama_kategori' => 'Administrasi Kependudukan',
+                'keterangan' => 'Laporan terkait KTP, KK, Akta Kelahiran, dll',
+            ],
+            [
+                'nama_kategori' => 'Lainnya',
+                'keterangan' => 'Kategori lain yang tidak termasuk di atas',
+            ],
+        ];
+
+        foreach ($kategoriAduan as $kategori) {
+            DB::table('kategori_aduan')->insert($kategori);
+        }
+
         $this->command->info('✅ Master data berhasil dibuat:');
         $this->command->info('   - 5 Status Aduan: Diajukan, Diverifikasi, Ditolak, Diproses, Selesai');
         $this->command->info('   - 2 Akses Aduan: Publik, Privat');
+        $this->command->info('   - 11 Kategori Aduan');
     }
 }

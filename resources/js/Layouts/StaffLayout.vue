@@ -41,7 +41,7 @@ const closeSidebar = () => {
 
             <!-- Logo & App Name -->
             <div class="flex items-center gap-3">
-              <img src="/logo-pemalang.png" alt="Logo" class="h-10 w-10" onerror="this.style.display='none'">
+              <img src="/logo.png" alt="Logo" class="h-10 w-10" onerror="this.style.display='none'">
               <div class="hidden sm:block">
                 <h1 class="text-lg font-bold text-gray-800 leading-tight">E-Lapor</h1>
                 <p class="text-xs text-gray-500 leading-tight">Pemkab Pemalang</p>

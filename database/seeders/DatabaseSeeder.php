@@ -14,8 +14,8 @@ class DatabaseSeeder extends Seeder
         // Jalankan seeder untuk peran dan user
         $this->call([
             RoleSeeder::class,        // Buat role: Admin, OPD, Masyarakat
-            MasterDataSeeder::class,  // Buat status aduan & akses aduan
-            AdminOpdSeeder::class,    // Buat user Admin dan OPD
+            MasterDataSeeder::class,  // Buat status aduan, akses aduan, & kategori aduan
+            AdminOpdSeeder::class,    // Buat user Admin, OPD, dan assign kategori ke OPD
         ]);
     }
 }
