@@ -20,6 +20,82 @@ Sistem Pengaduan Masyarakat - Aplikasi web untuk mengelola pengaduan masyarakat 
 
 ## Instalasi
 
+### Opsi 1: Menggunakan Docker (Recommended untuk Development)
+
+#### Persyaratan
+- Docker Desktop atau Docker Engine
+- Docker Compose
+
+#### Quick Start
+
+1. **Clone atau Download Project**
+   ```bash
+   git clone <repository-url>
+   cd citizen-complaint
+   ```
+
+2. **Copy Environment File**
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Build dan Jalankan Containers**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Generate Application Key**
+   ```bash
+   docker-compose exec app php artisan key:generate
+   ```
+
+5. **Jalankan Migrasi Database**
+   ```bash
+   docker-compose exec app php artisan migrate
+   ```
+
+6. **Akses Aplikasi**
+   - **Web App**: http://localhost:8000
+   - **Vite Dev Server** (hot reload): http://localhost:5173
+   - **MinIO Console** (object storage): http://localhost:9001
+     - Username: `minioadmin`
+     - Password: `minioadmin`
+   - **Mailpit** (email testing): http://localhost:8025
+
+#### Perintah Docker Berguna
+
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f app
+
+# Execute artisan commands
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan db:seed
+
+# Access container shell
+docker-compose exec app sh
+
+# Rebuild containers
+docker-compose build
+docker-compose up -d --force-recreate
+```
+
+#### Services yang Tersedia
+
+- **app**: Laravel application dengan hot reload
+- **db**: MySQL 8.0 (port 3306)
+- **redis**: Redis 7 untuk caching & queues (port 6379)
+- **minio**: S3-compatible object storage (ports 9000, 9001)
+- **mailpit**: Email testing tool (ports 1025, 8025)
+
+### Opsi 2: Instalasi Manual
+
 ### 1. Clone atau Download Project
 
 ```bash
@@ -183,6 +259,37 @@ php artisan config:clear       # Clear config cache
 php artisan route:clear        # Clear route cache
 php artisan view:clear         # Clear compiled views
 ```
+
+## Docker Deployment
+
+### Development Environment
+
+Docker Compose sudah dikonfigurasi untuk development dengan:
+- Hot reload untuk Vite
+- Volume mounts untuk live code changes
+- MySQL, Redis, MinIO, dan Mailpit
+
+```bash
+docker-compose up -d
+```
+
+### Production Deployment
+
+Untuk production, gunakan Dockerfile dengan target `production`:
+
+```bash
+# Build production image
+docker build --target production -t citizen-complaint:latest .
+
+# Run production container
+docker run -d \
+  -p 8000:8000 \
+  --env-file .env.production \
+  --name citizen-complaint \
+  citizen-complaint:latest
+```
+
+**Catatan**: Untuk production, database, Redis, dan object storage harus dikonfigurasi secara terpisah (tidak menggunakan docker-compose).
 
 ## Catatan Penting
 

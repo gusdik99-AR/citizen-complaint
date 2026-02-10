@@ -17,6 +17,14 @@ export default defineConfig({
             },
         }),
     ],
+    server: {
+        host: process.env.VITE_DEV_SERVER_HOST || '0.0.0.0',
+        port: parseInt(process.env.VITE_DEV_SERVER_PORT || '5173'),
+        strictPort: true,
+        hmr: {
+            host: 'localhost',
+        },
+    },
     resolve: {
         alias: {
             '@': '/resources/js',
