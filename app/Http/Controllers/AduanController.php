@@ -38,7 +38,8 @@ class AduanController extends Controller
     {
         // Validate the request
         $validated = $request->validate([
-            'foto' => 'required|image|max:2048', // max 2MB
+            'foto' => 'required',
+            'foto.*' => 'image|max:2048', // max 2MB per file
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'lokasi' => 'nullable|string',
@@ -47,8 +48,8 @@ class AduanController extends Controller
             'deskripsi' => 'required|string|min:20',
         ], [
             'foto.required' => 'Foto bukti wajib diupload',
-            'foto.image' => 'File harus berupa gambar',
-            'foto.max' => 'Ukuran foto maksimal 2MB',
+            'foto.*.image' => 'File harus berupa gambar',
+            'foto.*.max' => 'Ukuran foto maksimal 2MB',
             'latitude.required' => 'Lokasi diperlukan',
             'longitude.required' => 'Lokasi diperlukan',
             'jenis.required' => 'Jenis aduan harus dipilih',
@@ -76,8 +77,11 @@ class AduanController extends Controller
                 ])->withInput();
             }
 
-            // Upload foto to S3/MinIO
-            $fotoPath = $request->file('foto')->store('aduan');
+            // Handle files
+            $files = $request->file('foto');
+            if (!is_array($files)) {
+                $files = [$files];
+            }
 
             // Generate no_aduan (format: ADU-YYYYMMDD-XXXX)
             $today = now()->format('Ymd');
@@ -94,18 +98,25 @@ class AduanController extends Controller
             }
 
             $noAduan = "ADU-{$today}-" . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
-
-            // Upload foto to public/upload_aduan/{no_aduan}/ so it can be served directly
-            $file = $request->file('foto');
             $destinationDir = public_path('upload_aduan/' . $noAduan);
 
             if (!File::exists($destinationDir)) {
                 File::makeDirectory($destinationDir, 0755, true);
             }
 
-            $filename = $noAduan . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move($destinationDir, $filename);
-            $fotoPath = 'upload_aduan/' . $noAduan . '/' . $filename;
+            $mainPhotoPath = null;
+            $uploadedPhotos = [];
+
+            foreach ($files as $index => $file) {
+                $filename = $noAduan . '_' . time() . '_' . $index . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationDir, $filename);
+                $path = 'upload_aduan/' . $noAduan . '/' . $filename;
+
+                if ($index === 0) {
+                    $mainPhotoPath = $path;
+                }
+                $uploadedPhotos[] = $path;
+            }
 
             // Insert into aduan table
             $aduanId = DB::table('aduan')->insertGetId([
@@ -115,7 +126,7 @@ class AduanController extends Controller
                 'lokasi' => $validated['lokasi'] ?? ($validated['latitude'] . ', ' . $validated['longitude']),
                 'latitude' => $validated['latitude'],
                 'longitude' => $validated['longitude'],
-                'foto' => $fotoPath,
+                'foto' => $mainPhotoPath, // Store main photo for backward compatibility
                 'masyarakat_id' => $masyarakat->id,
                 'kategori_aduan_id' => $validated['kategori'],
                 'akses_aduan_id' => $validated['jenis'],
@@ -124,6 +135,18 @@ class AduanController extends Controller
                 'tanggal_dibuat' => now(),
                 'tanggal_diubah' => now(),
             ]);
+
+            // Insert into aduan_fotos table
+            $photoRecords = [];
+            foreach ($uploadedPhotos as $path) {
+                $photoRecords[] = [
+                    'aduan_id' => $aduanId,
+                    'path' => $path,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            DB::table('aduan_fotos')->insert($photoRecords);
 
             // Create initial status history
             DB::table('riwayat_status_aduan')->insert([
@@ -143,9 +166,9 @@ class AduanController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // If upload fails, delete the uploaded file
-            if (isset($fotoPath)) {
-                Storage::delete($fotoPath);
+            // If upload fails, cleanup directory
+            if (isset($destinationDir) && File::exists($destinationDir)) {
+                File::deleteDirectory($destinationDir);
             }
 
             // Log error for debugging
@@ -240,13 +263,37 @@ class AduanController extends Controller
             ->orderBy('tanggapan_aduan.tanggal_dibuat', 'desc')
             ->get();
 
-        // Generate image URL
+        // Get photos
+        $fotos = DB::table('aduan_fotos')
+            ->where('aduan_id', $id)
+            ->get();
+
+        $fotoUrls = [];
+        $disk = config('filesystems.default');
+
+        if ($fotos->isNotEmpty()) {
+            foreach ($fotos as $foto) {
+                if ($disk === 's3') {
+                    $fotoUrls[] = Storage::url($foto->path);
+                } else {
+                    $fotoUrls[] = asset($foto->path); // Ensure path is correct relative to public
+                }
+            }
+        } elseif ($aduan->foto) {
+            // Fallback to single photo if no aduan_fotos records (backward compatibility)
+            if ($disk === 's3') {
+                $fotoUrls[] = Storage::url($aduan->foto);
+            } else {
+                $fotoUrls[] = asset($aduan->foto);
+            }
+        }
+
+        // Generate main image URL for backward compatibility in view
         if ($aduan->foto) {
-            $disk = config('filesystems.default');
             if ($disk === 's3') {
                 $aduan->foto_url = Storage::url($aduan->foto);
             } else {
-                $aduan->foto_url = asset('storage/' . $aduan->foto);
+                $aduan->foto_url = asset($aduan->foto);
             }
         } else {
             $aduan->foto_url = null;
@@ -256,6 +303,7 @@ class AduanController extends Controller
             'aduan' => $aduan,
             'riwayatStatus' => $riwayatStatus,
             'tanggapan' => $tanggapan,
+            'fotos' => $fotoUrls, // Pass array of photo URLs
             'isOwner' => $isOwner,
             'isGuest' => $isGuest,
         ]);

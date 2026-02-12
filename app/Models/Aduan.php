@@ -80,4 +80,12 @@ class Aduan extends Model
     {
         return $this->hasMany(TanggapanAduan::class, 'aduan_id');
     }
+
+    /**
+     * Relasi One-to-Many dengan AduanFoto
+     */
+    public function fotos()
+    {
+        return $this->hasMany(AduanFoto::class, 'aduan_id');
+    }
 }
