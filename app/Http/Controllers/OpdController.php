@@ -105,18 +105,24 @@ class OpdController extends Controller
                 ->where('status_aduan.id', 4) // Selesai
                 ->count();
 
-            // Get assigned complaints
+            // Get assigned complaints with kategori, jenis, lokasi
             $assignedComplaints = DB::table('aduan')
                 ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
                 ->join('masyarakat', 'aduan.masyarakat_id', '=', 'masyarakat.id')
                 ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
+                ->join('kategori_aduan', 'aduan.kategori_aduan_id', '=', 'kategori_aduan.id') // kategori
+                ->join('akses_aduan', 'aduan.akses_aduan_id', '=', 'akses_aduan.id')           // jenis
+                ->join('lokasi', 'aduan.lokasi_id', '=', 'lokasi.id')                          // lokasi
                 ->where('kategori_aduan_opd.opd_id', $opdId)
                 ->select(
                     'aduan.id as id',
                     DB::raw('LEFT(aduan.isi_aduan, 50) as judul'),
                     'masyarakat.nama_lengkap as pelapor',
                     'status_aduan.nama_status as status',
-                    DB::raw('DATE(aduan.tanggal_dibuat) as tanggal')
+                    DB::raw('DATE(aduan.tanggal_dibuat) as tanggal'),
+                    'kategori_aduan.nama_kategori as kategori',
+                    'akses_aduan.nama_akses_aduan as nama_akses_aduan',
+                    'lokasi.nama_lokasi as lokasi'
                 )
                 ->orderBy('aduan.tanggal_dibuat', 'desc')
                 ->limit(10)

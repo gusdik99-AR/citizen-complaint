@@ -20,7 +20,7 @@
         {{ $page.props.flash.success }}
       </div>
         <!-- Or sign in with Google -->
-        <div class="pt-4">
+        <!-- <div class="pt-4">
           <div class="flex items-center gap-3">
             <div class="flex-1 h-px bg-gray-200"></div>
             <div class="text-xs text-gray-400 uppercase">atau</div>
@@ -36,7 +36,7 @@
             </svg>
             Masuk dengan Google
           </a>
-        </div>
+        </div> -->
 
       <!-- Form -->
       <form @submit.prevent="submit" class="space-y-4">

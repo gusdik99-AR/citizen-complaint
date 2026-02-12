@@ -320,7 +320,7 @@ const viewLaporan = (aduanId) => {
                 {{ complaint.jenis }}
               </td>
               <td class="px-6 py-4 text-sm text-gray-900">
-                {{ complaint.nama_kategori }}
+                {{ complaint.kategori }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
