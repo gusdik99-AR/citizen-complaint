@@ -4,6 +4,7 @@
     <header class="bg-white shadow">
       <div class="container mx-auto px-4 py-6">
         <div class="flex items-center justify-between">
+          <img src="/logo.png" alt="icon" class="h-10 w-10" />
           <h1 class="text-2xl font-bold text-gray-800">
             {{ title || 'Citizen Complaint' }}
           </h1>

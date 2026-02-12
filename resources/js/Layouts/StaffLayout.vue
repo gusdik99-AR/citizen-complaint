@@ -69,8 +69,9 @@ const closeSidebar = () => {
           <!-- Navigation -->
           <nav class="hidden lg:flex items-center gap-2 flex-1 justify-start ml-10">
             <!-- Dashboard -->
+            
             <a
-              href="/"
+              href=""
               class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg transition"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,6 +84,8 @@ const closeSidebar = () => {
               </svg>
               <span>Dashboard</span>
             </a>
+            
+  
             <!-- Master -->
             <div class="relative group">
               <a

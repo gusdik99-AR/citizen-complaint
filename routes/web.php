@@ -19,6 +19,7 @@ use App\Http\Controllers\PengaturanController;
 
 // Halaman utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Auth routes - Guest only
 Route::middleware('guest')->group(function () {

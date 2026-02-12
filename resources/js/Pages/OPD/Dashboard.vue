@@ -259,12 +259,27 @@ const viewLaporan = (aduanId) => {
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                Judul Aduan
+                Pelapor
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                Pelapor
+                Deskripsi Aduan
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Lokasi
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Jenis 
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Kategori
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -277,7 +292,7 @@ const viewLaporan = (aduanId) => {
                 Tanggal
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                style="width: 120px;"
               >
                 Aksi
               </th>
@@ -285,18 +300,27 @@ const viewLaporan = (aduanId) => {
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              v-for="complaint in assignedComplaints"
+              v-for="(complaint, index) in assignedComplaints"
               :key="complaint.id"
               class="hover:bg-gray-50 transition"
             >
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                #{{ complaint.id }}
+                {{ index + 1 }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                {{ complaint.pelapor }}
               </td>
               <td class="px-6 py-4 text-sm text-gray-900">
                 {{ complaint.judul }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {{ complaint.pelapor }}
+              <td class="px-6 py-4 text-sm text-gray-900">
+                {{ complaint.lokasi }}
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                {{ complaint.jenis }}
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                {{ complaint.nama_kategori }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
@@ -310,30 +334,77 @@ const viewLaporan = (aduanId) => {
                 {{ complaint.tanggal }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                <div class="flex space-x-2">
+
                 <button
                   @click="wizard(complaint.id)"
-                  class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition"
+                  class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
-                  Proses
+                  <!-- Ikon Proses -->
+                  <svg xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke-width="1.5" 
+                      stroke="currentColor" 
+                      class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" 
+                          d="M12 6v6h6m2 0a8 8 0 11-16 0 8 8 0 0116 0z" />
+                  </svg>
                 </button>
+
                 <button
                   @click="changeStatus(complaint.id)"
-                  class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded transition"
+                  class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
-                  Rubah Status
+                  <!-- Ikon Rubah Status -->
+                  <svg xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke-width="1.5" 
+                      stroke="currentColor" 
+                      class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" 
+                          d="M4.5 12a7.5 7.5 0 1112.9 5.3l2.1 2.1m-2.1-2.1V18m0 0h-2.25" />
+                  </svg>
                 </button>
+
                 <button
                   @click="finishComplaint(complaint.id)"
-                  class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded transition"
+                  class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
-                  Selesaikan
+                  <!-- Ikon Selesai -->
+                  <svg xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke-width="1.5" 
+                      stroke="currentColor" 
+                      class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" 
+                          d="M9 12.75l2.25 2.25L15 9.75m6.75 2.25a9.75 9.75 0 11-19.5 0 9.75 9.75 0 0119.5 0z" />
+                  </svg>
                 </button>
+
                 <button
                   @click="viewLaporan(complaint.id)"
-                  class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition"
+                  class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
-                  Cetak Laporan
+                  <!-- Ikon Cetak Laporan -->
+                  <svg xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke-width="1.5" 
+                      stroke="currentColor" 
+                      class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" 
+                          d="M6 9V3h12v6M6 18h12v3H6v-3zm0-9h12v6H6v-6z" />
+                  </svg>
                 </button>
+                </div>
+
+
+                <!-- Mulai -->
+                
+                <!-- Selesai -->
               </td>
             </tr>
           </tbody>

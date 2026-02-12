@@ -25,11 +25,12 @@ class Aduan extends Model
         'akses_aduan_id',
         'status_aduan_id',
         'tanggal_selesai',
+        'tanggal_target',
+        'tanggal_mulai',
     ];
 
     protected $casts = [
         'tanggal_lapor' => 'datetime',
-        'tanggal_selesai' => 'datetime',
     ];
 
     /**

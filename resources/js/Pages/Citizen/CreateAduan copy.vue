@@ -174,43 +174,59 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import CitizenLayout from '@/Layouts/CitizenLayout.vue';
 import Swal from 'sweetalert2';
 
+// Props from backend
 const props = defineProps({
-  jenisOptions: { type: Array, default: () => [] },
-  kategoriOptions: { type: Array, default: () => [] }
+  jenisOptions: {
+    type: Array,
+    default: () => []
+  },
+  kategoriOptions: {
+    type: Array,
+    default: () => []
+  }
 });
 
+// Form data
 const form = useForm({
   foto: null,
   latitude: null,
   longitude: null,
-  lokasi: '',   // akan diisi koordinat dulu, lalu alamat
+  lokasi: '',
   jenis: '',
   kategori: '',
   deskripsi: ''
 });
 
+// Image preview
 const imagePreview = ref(null);
 const isDetectingLocation = ref(false);
 const locationName = ref('');
 
+// Location display
 const locationDisplay = computed(() => {
   if (locationName.value) {
-    return locationName.value; // alamat lengkap jika sudah ada
+    return locationName.value;
   }
   if (form.latitude && form.longitude) {
     return `${form.latitude.toFixed(6)}, ${form.longitude.toFixed(6)}`;
   }
-  return 'Gagal mendapatkan alamat';
+  return '';
 });
 
+
+
+
+
+// Handle file change
 const handleFileChange = (e) => {
   const file = e.target.files[0];
   if (file) {
+    // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
       Swal.fire({
         icon: 'warning',
@@ -221,7 +237,10 @@ const handleFileChange = (e) => {
       e.target.value = '';
       return;
     }
+
     form.foto = file;
+
+    // Create preview
     const reader = new FileReader();
     reader.onload = (event) => {
       imagePreview.value = event.target.result;
@@ -230,9 +249,12 @@ const handleFileChange = (e) => {
   }
 };
 
-// Reverse geocoding async (jalan di background)
+// Reverse geocoding - get address from coordinates
 const reverseGeocode = async (lat, lon) => {
   try {
+    console.log('Starting reverse geocoding for:', lat, lon);
+    
+    // Call Laravel backend endpoint (no CORS issue)
     const response = await fetch('/api/reverse-geocode', {
       method: 'POST',
       headers: {
@@ -242,22 +264,29 @@ const reverseGeocode = async (lat, lon) => {
       },
       body: JSON.stringify({ lat, lon })
     });
+    
     if (response.ok) {
       const data = await response.json();
+      console.log('Geocoding response:', data);
+      
       if (data.success) {
         locationName.value = data.address;
-        form.lokasi = data.address; // update alamat lengkap
+        console.log('Address set to:', data.address);
       } else {
+        console.error('Geocoding failed:', data.message);
         locationName.value = 'Gagal mendapatkan alamat';
       }
     } else {
+      console.error('Geocoding API error:', response.status);
       locationName.value = 'Gagal mendapatkan alamat';
     }
   } catch (error) {
+    console.error('Reverse geocoding error:', error);
     locationName.value = 'Error: ' + error.message;
   }
 };
 
+// Detect location using geolocation API
 const detectLocation = () => {
   if (!navigator.geolocation) {
     Swal.fire({
@@ -272,21 +301,22 @@ const detectLocation = () => {
   isDetectingLocation.value = true;
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       form.latitude = position.coords.latitude;
       form.longitude = position.coords.longitude;
-
-      // tampilkan koordinat dulu
-      form.lokasi = `${form.latitude.toFixed(6)}, ${form.longitude.toFixed(6)}`;
-
-      // jalankan reverse geocoding di background
-      reverseGeocode(form.latitude, form.longitude);
-
+      
+      // Get location name from coordinates
+      await reverseGeocode(position.coords.latitude, position.coords.longitude);
+      
+      // Set form lokasi
+      form.lokasi = locationName.value || `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+      
       isDetectingLocation.value = false;
     },
     (error) => {
       isDetectingLocation.value = false;
       let errorMessage = 'Gagal mendeteksi lokasi';
+      
       switch(error.code) {
         case error.PERMISSION_DENIED:
           errorMessage = 'Izin akses lokasi ditolak. Silakan aktifkan di pengaturan browser.';
@@ -298,6 +328,7 @@ const detectLocation = () => {
           errorMessage = 'Waktu permintaan lokasi habis';
           break;
       }
+      
       Swal.fire({
         icon: 'error',
         title: 'Geolocation Error',
@@ -305,14 +336,22 @@ const detectLocation = () => {
         confirmButtonColor: '#3B82F6',
       })
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
   );
 };
+
+// Auto-detect location on mount
+import { onMounted } from 'vue';
 
 onMounted(() => {
   detectLocation();
 });
 
+// Submit form
 const submit = () => {
   form.post('/aduan', {
     forceFormData: true,
@@ -323,6 +362,3 @@ const submit = () => {
   });
 };
 </script>
-
-
-

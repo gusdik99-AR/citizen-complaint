@@ -249,6 +249,8 @@ class OpdController extends Controller
         $waktuStatus = $data['waktu_status']['waktu_status'] ?? $data['waktu_status']['waktu'] ?? now();
         $catatan = $data['waktu_status']['catatan_waktu'] ?? $data['waktu_status']['catatan'] ?? null;
 
+
+
         // unit kerja
         $unitOpdId = $data['assignment']['unit_kerja'] ?? null;
 
@@ -266,10 +268,24 @@ class OpdController extends Controller
                 'pengguna_id' => $penggunaId,
                 'unit_opd_id' => $unitOpdId,
                 'waktu_status_aduan' => $waktuStatus,
+
                 'tanggal_dibuat' => now(),
                 'tanggal_diubah' => now(),
             ]
         );
+
+        // Validasi input
+        $validated = $request->validate([
+            'tanggal_mulai'   => 'nullable|date',
+            'tanggal_target'  => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date',
+        ]);
+
+        // Ambil model berdasarkan ID
+        $aduan = Aduan::findOrFail($aduanModel->id);
+
+        // Update data
+        $aduan->update($validated);
 
         // Insert or update tanggapan_aduan for this pengguna if penggunaId exists
         if ($penggunaId) {

@@ -288,8 +288,7 @@
           <button
             v-if="currentStep > 0"
             @click="previousStep"
-            class="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg"
-          >
+            class="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg">
             Sebelumnya
           </button>
           <button
@@ -373,7 +372,7 @@ const sampleData = props.aduan
       longitude: props.aduan.longitude ? parseFloat(props.aduan.longitude) : null,
       foto: props.aduan.foto || "",
     }
-  : defaultSample;
+  : defaultSample
 
 // verification step removed (not used)
 
