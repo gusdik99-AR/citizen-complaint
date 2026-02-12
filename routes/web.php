@@ -129,15 +129,25 @@ Route::middleware([CheckAuth::class, 'opd.only'])->group(function () {
     Route::post('/api/opd/wizard/{aduan}/save', [OpdController::class, 'saveWizardPartial'])->name('api.opd.wizard.save');
     Route::get('/api/opd/wizard/{aduan}', [OpdController::class, 'getWizardDraft'])->name('api.opd.wizard.get');
 });
-// Complaint detail - Accessible by everyone (with access control in controller)
-Route::get('/aduan/{id}', [AduanController::class, 'show'])->name('aduan.show');
-Route::post('/aduan/{id}/vote', [AduanController::class, 'vote'])->name('aduan.vote');
 
-// Aduan routes - Authenticated users only
+
 Route::middleware(CheckAuth::class)->group(function () {
-    Route::get('/aduan/create', [AduanController::class, 'create'])->name('aduan.create');
-    Route::post('/aduan', [AduanController::class, 'store'])->name('aduan.store');
+    Route::get('/aduan/create', [AduanController::class, 'create'])
+        ->name('aduan.create');
 
-    // Location API
-    Route::post('/api/reverse-geocode', [LocationController::class, 'reverseGeocode'])->name('api.reverse-geocode');
+    Route::post('/aduan', [AduanController::class, 'store'])
+        ->name('aduan.store');
 });
+
+// Complaint detail - Accessible by everyone
+Route::get('/aduan/{id}', [AduanController::class, 'show'])
+    ->whereNumber('id')
+    ->name('aduan.show');
+
+Route::post('/aduan/{id}/vote', [AduanController::class, 'vote'])
+    ->whereNumber('id')
+    ->name('aduan.vote');
+
+// Location API
+Route::post('/api/reverse-geocode', [LocationController::class, 'reverseGeocode'])
+    ->name('api.reverse-geocode');
