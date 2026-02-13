@@ -24,6 +24,13 @@ if ! grep -q "APP_KEY=base64:" .env; then
     php artisan key:generate
 fi
 
+# Install/Update dependencies
+echo "📦 Installing PHP dependencies..."
+composer install
+
+echo "📦 Installing Node.js dependencies..."
+npm install
+
 # Run migrations
 echo "🗄️  Running database migrations..."
 php artisan migrate

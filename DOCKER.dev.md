@@ -4,12 +4,12 @@
 
 ```bash
 # 1. Start all services
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml up -d --build
 
 # 2. Wait for services to be ready (30 seconds)
 sleep 30
 
-# 3. Run initial setup
+# 3. Run initial setup (includes dependency installation)
 docker-compose -f docker-compose.dev.yml exec app sh docker/scripts/setup.sh
 
 # 4. Access application
@@ -104,6 +104,13 @@ docker-compose exec app chown -R www-data:www-data storage bootstrap/cache
 ```bash
 docker-compose restart db
 docker-compose exec app php artisan migrate
+```
+
+**Class not found (e.g. Flysystem) or Module not found**:
+This usually means the container's `vendor` or `node_modules` volume is out of sync.
+```bash
+docker-compose -f docker-compose.dev.yml exec app composer install
+docker-compose -f docker-compose.dev.yml exec app npm install
 ```
 
 ## Tech Stack

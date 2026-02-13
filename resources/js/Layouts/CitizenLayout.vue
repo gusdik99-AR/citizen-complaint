@@ -18,7 +18,7 @@ const toggleMenu = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen flex flex-col bg-gray-50">
     <!-- Mobile-First Header -->
     <header class="bg-white shadow-sm sticky top-0 z-30">
       <div class="px-4 py-3">
@@ -102,7 +102,7 @@ const toggleMenu = () => {
     </header>
 
     <!-- Main Content -->
-    <main class="px-4 py-6">
+    <main class="flex-grow px-4 py-6">
       <slot />
     </main>
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen flex flex-col bg-gray-50">
     <!-- Header -->
     <header class="bg-white shadow">
       <div class="container mx-auto px-4 py-6">
@@ -16,7 +16,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="flex-grow container mx-auto px-4 py-8">
       <slot />
     </main>
 

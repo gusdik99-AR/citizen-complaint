@@ -25,7 +25,7 @@ const closeSidebar = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen flex flex-col bg-gray-50">
     <!-- Navbar -->
     <nav class="bg-white shadow-md sticky top-0 z-40">
       <div class="px-4 sm:px-6 lg:px-8">
@@ -429,7 +429,7 @@ const closeSidebar = () => {
     
 
     <!-- Main Content -->
-    <main class="px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow px-4 sm:px-6 lg:px-8 py-8">
       <slot />
     </main>
   </div>
