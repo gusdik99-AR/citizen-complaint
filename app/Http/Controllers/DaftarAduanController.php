@@ -89,23 +89,22 @@ class DaftarAduanController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
+
         $aduan->update(['status_aduan_id' => $validated['status_aduan_id']]);
 
-        if ($validated['keterangan']) {
-            // determine pengguna_id from session or fallback
-            $emailSess = session('email');
-            $namaSess = session('nama_pengguna');
-            $penggunaRow = DB::table('pengguna')->where('email', $emailSess)->orWhere('nama_pengguna', $namaSess)->first();
-            $penggunaId = $penggunaRow?->id ?? DB::table('pengguna')->value('id') ?? 1;
+        // Simpan ke riwayat_status_aduan setiap kali status diubah
+        $emailSess = session('email');
+        $namaSess = session('nama_pengguna');
+        $penggunaRow = DB::table('pengguna')->where('email', $emailSess)->orWhere('nama_pengguna', $namaSess)->first();
+        $penggunaId = $penggunaRow?->id ?? DB::table('pengguna')->value('id') ?? 1;
 
-            \App\Models\RiwayatStatusAduan::create([
-                'aduan_id' => $aduan->id,
-                'status_aduan_id' => $validated['status_aduan_id'],
-                'catatan' => $validated['keterangan'],
-                'pengguna_id' => $penggunaId,
-                'waktu_status_aduan' => now(),
-            ]);
-        }
+        \App\Models\RiwayatStatusAduan::create([
+            'aduan_id' => $aduan->id,
+            'status_aduan_id' => $validated['status_aduan_id'],
+            'catatan' => $validated['keterangan'] ?? '',
+            'pengguna_id' => $penggunaId,
+            'waktu_status_aduan' => now(),
+        ]);
 
         return redirect()->back()->with('success', 'Status aduan berhasil diperbarui');
     }
