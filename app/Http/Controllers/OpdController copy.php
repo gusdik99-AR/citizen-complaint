@@ -89,7 +89,7 @@ class OpdController extends Controller
             $stats['diverifikasi'] = $counts->get(2, 0);
             $stats['ditolak'] = $counts->get(3, 0);
             $stats['diproses'] = $counts->get(4, 0);
-            $stats['selesai_opd'] = $counts->get(6, 0);
+            $stats['selesai'] = $counts->get(5, 0);
 
             // Get assigned complaints (latest 10)
             $assignedComplaints = DB::table('aduan')
@@ -99,7 +99,6 @@ class OpdController extends Controller
                 ->join('kategori_aduan', 'aduan.kategori_aduan_id', '=', 'kategori_aduan.id')
                 ->join('akses_aduan', 'aduan.akses_aduan_id', '=', 'akses_aduan.id')
                 ->where('kategori_aduan_opd.opd_id', $opdId)
-                ->whereIn('aduan.status_aduan_id', [4, 6])
                 ->select(
                     'aduan.id as id',
                     DB::raw('LEFT(aduan.isi_aduan, 50) as judul'),

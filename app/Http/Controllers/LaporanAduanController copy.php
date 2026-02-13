@@ -213,7 +213,51 @@ class LaporanAduanController extends Controller
          return Inertia::render('Admin/Laporan/FixLaporanAduan', [
             'peran' => $aduan,
         ]);
-        
+        // $aduan->load(['masyarakat.pengguna', 'kategoriAduan', 'statusAduan', 'riwayatStatus', 'tanggapan']);
+
+        // // Format data laporan detail
+        // $laporan = [
+        //     'id' => $aduan->id,
+        //     'nomor_laporan' => $this->generateNomorLaporan($aduan->id, $aduan->tanggal_lapor),
+        //     'tanggal_lapor' => $aduan->tanggal_lapor,
+        //     'nama_lengkap' => $aduan->masyarakat?->pengguna?->nama_pengguna ?? 'N/A',
+        //     'alamat' => $aduan->masyarakat?->alamat ?? 'N/A',
+        //     'nomor_telepon' => $aduan->masyarakat?->pengguna?->nomor_telepon ?? 'N/A',
+        //     'nomor_identitas' => $aduan->masyarakat?->nomor_identitas ?? 'N/A',
+        //     'status' => $aduan->masyarakat?->status ?? 'Non Pegawai',
+        //     'email' => $aduan->masyarakat?->pengguna?->email ?? 'N/A',
+        //     'sumber_pengaduan' => 'Sistem Online',
+        //     'perihal' => substr($aduan->isi_aduan, 0, 100),
+        //     'uraian' => $aduan->isi_aduan,
+        //     'lokasi' => $aduan->lokasi ?? 'Jakarta',
+        //     'latitude' => $aduan->latitude,
+        //     'longitude' => $aduan->longitude,
+        //     'kategori' => $aduan->kategoriAduan?->nama_kategori ?? 'N/A',
+        //     'status_aduan' => $aduan->statusAduan?->nama_status ?? 'Baru',
+        //     'akses_aduan' => $aduan->aksesAduan?->nama_akses ?? 'Publik',
+        //     'foto' => $aduan->foto,
+        //     'tanggal_selesai' => $aduan->tanggal_selesai,
+        //     'riwayat_status' => $aduan->riwayatStatus,
+        //     'tanggapan' => $aduan->tanggapan,
+        //     'masyarakat' => $aduan->masyarakat,
+        // ];
+
+        // // Get user data
+        // $user = null;
+        // $email = session('email');
+        // if ($email) {
+        //     $user = DB::table('pengguna')
+        //         ->leftjoin('peran_pengguna', 'pengguna.id', '=', 'peran_pengguna.pengguna_id')
+        //         ->leftjoin('peran', 'peran_pengguna.peran_id', '=', 'peran.id')
+        //         ->where('pengguna.email', $email)
+        //         ->select('pengguna.*', 'peran.id as peran_id', 'peran.nama_peran')
+        //         ->first();
+        // }
+
+        // return Inertia::render('Admin/Laporan/DetailLaporanAduan', [
+            // 'user' => $user,
+            // 'laporan' => $laporan,
+        // ]);
     }
 
     /**
