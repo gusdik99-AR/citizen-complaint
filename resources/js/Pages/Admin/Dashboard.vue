@@ -81,6 +81,13 @@ export default {
       }
       return colors[status] || 'bg-gray-100 text-gray-800'
     },
+    shouldShowTransfer(complaint) {
+      // Tampil hanya jika ADA riwayat status id 6
+      if (Array.isArray(complaint.riwayat_status_aduan)) {
+        return complaint.riwayat_status.some(r => r.status_aduan_id == 6)
+      }
+      return true;
+    },
     nextPage() {
       if (this.currentPage < this.totalPages) this.currentPage++
     },
@@ -189,6 +196,8 @@ export default {
             <option value="3">Ditolak</option>
             <option value="5">Selesai</option>
           </select>
+          <label class="block text-sm font-medium text-gray-700 mb-1 mt-4">Keterangan / Catatan</label>
+          <textarea id="catatanInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Tulis keterangan perubahan status..."></textarea>
         </div>`,
         showCancelButton: true,
         confirmButtonText: 'Ubah Status',
@@ -201,11 +210,12 @@ export default {
         },
         preConfirm: () => {
           const newStatus = document.getElementById('statusSelect')?.value
+          const keterangan = document.getElementById('catatanInput')?.value || ''
           if (!newStatus) {
             Swal.showValidationMessage('Silakan pilih status terlebih dahulu')
             return false
           }
-          return { newStatus }
+          return { newStatus, keterangan }
         }
       })
 
@@ -214,7 +224,7 @@ export default {
       try {
         await router.put(`/manajemenaduan/daftaraduan/${complaint.id}/status`, {
           status_aduan_id: result.value.newStatus,
-          keterangan: '',
+          keterangan: result.value.keterangan,
         })
 
         Swal.fire({
@@ -532,6 +542,7 @@ export default {
                   Ubah Status
                 </button>
                 <button
+                  v-if="shouldShowTransfer(complaint)"
                   @click="transferComplaint(complaint)"
                   class="text-green-600 hover:text-green-800 font-medium transition"
                 >

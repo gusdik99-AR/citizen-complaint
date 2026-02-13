@@ -70,7 +70,7 @@ class Aduan extends Model
      */
     public function riwayatStatus()
     {
-        return $this->hasMany(RiwayatStatusAduan::class, 'aduan_id');
+        return $this->hasMany(RiwayatStatusAduan::class, 'aduan_id')->orderBy('waktu_status_aduan');
     }
 
     /**

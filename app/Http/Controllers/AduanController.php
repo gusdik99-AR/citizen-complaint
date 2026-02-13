@@ -119,6 +119,11 @@ class AduanController extends Controller
                 $uploadedPhotos[] = $path;
             }
 
+            // Ambil opd_id dari kategori_aduan_opd
+            $opdId = DB::table('kategori_aduan_opd')
+                ->where('kategori_aduan_id', $validated['kategori'])
+                ->value('opd_id');
+
             // Insert into aduan table
             $aduanId = DB::table('aduan')->insertGetId([
                 'no_aduan' => $noAduan,
@@ -131,6 +136,7 @@ class AduanController extends Controller
                 'masyarakat_id' => $masyarakat->id,
                 'kategori_aduan_id' => $validated['kategori'],
                 'akses_aduan_id' => $validated['jenis'],
+                'opd_id' => $opdId,
                 'status_aduan_id' => 1, // Default: Diajukan (urutan 1)
                 'tanggal_selesai' => null,
                 'tanggal_dibuat' => now(),
@@ -240,11 +246,12 @@ class AduanController extends Controller
             abort(403, 'Anda tidak memiliki akses ke aduan ini');
         }
 
-        // Get status history
+        // Get status history, hide status_aduan_id == 6
         $riwayatStatus = DB::table('riwayat_status_aduan')
             ->join('status_aduan', 'riwayat_status_aduan.status_aduan_id', '=', 'status_aduan.id')
             ->join('pengguna', 'riwayat_status_aduan.pengguna_id', '=', 'pengguna.id')
             ->where('riwayat_status_aduan.aduan_id', $id)
+            ->where('riwayat_status_aduan.status_aduan_id', '!=', 6)
             ->select(
                 'riwayat_status_aduan.*',
                 'status_aduan.nama_status as status',
@@ -325,6 +332,7 @@ class AduanController extends Controller
             ->join('status_aduan', 'riwayat_status_aduan.status_aduan_id', '=', 'status_aduan.id')
             ->join('pengguna', 'riwayat_status_aduan.pengguna_id', '=', 'pengguna.id')
             ->where('riwayat_status_aduan.aduan_id', $id)
+            ->where('riwayat_status_aduan.status_aduan_id', '!=', 6)
             ->select(
                 'riwayat_status_aduan.id',
                 'riwayat_status_aduan.waktu_status_aduan',

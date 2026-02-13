@@ -138,14 +138,14 @@ class DaftarAduanController extends Controller
             ]);
         }
 
-        // Simpan ke riwayat_status_aduan
+        // Simpan ke riwayat_status_aduan, unit_opd_id harus null saat transfer ke OPD
         \App\Models\RiwayatStatusAduan::create([
             'aduan_id' => $aduan->id,
-            'status_aduan_id' => 2, // sesuai permintaan: set 2
+            'status_aduan_id' => 4, // set ke 4 (Diproses) saat transfer
             'catatan' => $validated['catatan'] ?? '',
             'pengguna_id' => $penggunaId,
             'waktu_status_aduan' => now(),
-            'unit_opd_id' => $unit->id,
+            'unit_opd_id' => null,
         ]);
 
         // Optionally update status utama aduan ke 2 juga
