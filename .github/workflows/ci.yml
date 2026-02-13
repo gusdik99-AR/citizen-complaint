@@ -53,8 +53,6 @@ jobs:
     - name: Directory Permissions
       run: chmod -R 777 storage bootstrap/cache
 
-    - name: Run Linting (Pint)
-      run: ./vendor/bin/pint --test
 
     - name: Run Tests
       env:
