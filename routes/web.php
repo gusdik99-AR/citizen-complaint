@@ -16,10 +16,14 @@ use App\Http\Controllers\AksesaduanController;
 use App\Http\Controllers\DaftarAduanController;
 use App\Http\Controllers\LaporanAduanController;
 use App\Http\Controllers\PengaturanController;
+use App\Http\Controllers\Api\AduanPhotoController;
 
 // Halaman utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+// API-ish route to list uploaded photos for an aduan (used by frontend loadPhotos)
+// Route::get('/api/opd/aduan/{id}/photos', [AduanPhotoController::class, 'index']); // Removed to use protected route below
 
 // Auth routes - Guest only
 Route::middleware('guest')->group(function () {
@@ -109,6 +113,8 @@ Route::middleware(CheckAuth::class)->group(function () {
     Route::get('/laporan/laporanaduan', [LaporanAduanController::class, 'index'])->name('laporan.laporanaduan');
     Route::get('/laporan-pengaduan', [LaporanAduanController::class, 'fixLaporan'])->name('laporan.fixlaporan');
     Route::get('/laporan-pengaduan/{aduan}', [LaporanAduanController::class, 'show'])->name('laporan.fixlaporan.show');
+
+
     Route::post('/laporan/laporanaduan/export', [LaporanAduanController::class, 'export'])->name('laporan.laporanaduan.export');
 });
 // pengaturan routes - Authenticated users only
@@ -132,6 +138,7 @@ Route::middleware([CheckAuth::class, 'opd.only'])->group(function () {
     Route::get('/api/opd/unit/{unitOpd}/pic', [OpdController::class, 'getPicByUnit'])->name('api.opd.unit.pic');
     Route::post('/api/opd/wizard/{aduan}/save', [OpdController::class, 'saveWizardPartial'])->name('api.opd.wizard.save');
     Route::get('/api/opd/wizard/{aduan}', [OpdController::class, 'getWizardDraft'])->name('api.opd.wizard.get');
+    Route::get('/api/opd/aduan/{aduan}/photos', [OpdController::class, 'getAduanPhotos'])->name('api.opd.aduan.photos');
 });
 
 

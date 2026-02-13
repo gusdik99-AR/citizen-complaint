@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -123,7 +124,7 @@ class AduanController extends Controller
                 'no_aduan' => $noAduan,
                 'tanggal_lapor' => now(),
                 'isi_aduan' => $validated['deskripsi'],
-                'lokasi' => $validated['lokasi'] ?? ($validated['latitude'] . ', ' . $validated['longitude']),
+                'lokasi' => $validated['lokasi'],
                 'latitude' => $validated['latitude'],
                 'longitude' => $validated['longitude'],
                 'foto' => $mainPhotoPath, // Store main photo for backward compatibility

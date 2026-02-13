@@ -336,24 +336,17 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(history, index) in (props.aduan.riwayat_status || [])" :key="index" class="border-b hover:bg-gray-50">
-                      <td class="px-3 py-2 font-medium" :class="getStatusColor(history.status_aduan?.nama_status)">
-                        {{ history.status_aduan?.nama_status || '-' }}
-                      </td>
-                      <td class="px-3 py-2 text-sm">
-                        {{ formatDate(history.waktu_status_aduan) }}
-                      </td>
-                      <td class="px-3 py-2 text-sm">
-                        {{ formatTime(history.waktu_status_aduan) }}
-                      </td>
-                      <td class="px-3 py-2 text-gray-600 text-xs max-w-xs truncate">
-                        {{ history.catatan || '-' }}
-                      </td>
+                    <tr class="border-b hover:bg-gray-100">
+                      <td class="px-3 py-2 text-blue-600 font-medium">Status Update</td>
+                      <td class="px-3 py-2">{{ waktuStatusForm.waktu_status }}</td>
+                      <td class="px-3 py-2">-</td>
+                      <td class="px-3 py-2 text-gray-600 text-xs max-w-xs truncate">{{ waktuStatusForm.catatan_waktu || '-' }}</td>
                     </tr>
-                    <tr v-if="!(props.aduan.riwayat_status && props.aduan.riwayat_status.length)" class="border-b">
-                      <td colspan="4" class="px-3 py-4 text-center text-gray-500 text-sm">
-                        Belum ada riwayat status
-                      </td>
+                    <tr class="bg-green-50">
+                      <td class="px-3 py-2 text-green-600 font-semibold">Selesai</td>
+                      <td class="px-3 py-2 font-medium">{{ waktuStatusForm.tanggal_selesai }}</td>
+                      <td class="px-3 py-2 font-medium">{{ waktuStatusForm.waktu_selesai }}</td>
+                      <td class="px-3 py-2 text-gray-600 text-xs max-w-xs truncate">{{ waktuStatusForm.catatan_selesai || '-' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -476,7 +469,9 @@ const statusForm = ref({
 // Array statis untuk pilihan status
 const statusOptions = [
   { id: "2", nama_status: "Menunggu" },
-  { id: "4", nama_status: "Sedang Dikerjakan" }
+  { id: "4", nama_status: "Sedang Dikerjakan" },
+  { id: "5", nama_status: "Selesai" },
+  { id: "3", nama_status: "Dibatalkan" }
 ];
 
 
@@ -742,31 +737,6 @@ const formatDate = (date) => {
   });
 };
 
-const formatTime = (date) => {
-  if (!date) return "-";
-  return new Date(date).toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case "Diajukan":
-      return "text-yellow-600 bg-yellow-100";
-    case "Diproses":
-    case "Sedang Dikerjakan":
-      return "text-blue-600 bg-blue-100";
-    case "Selesai":
-      return "text-green-600 bg-green-100";
-    case "Ditolak":
-    case "Dibatalkan":
-      return "text-red-600 bg-red-100";
-    default:
-      return "text-gray-600 bg-gray-100";
-  }
-};
-
 const saveCurrentStep = async () => {
   if (!props.aduan || !props.aduan.id) return;
 
@@ -891,6 +861,4 @@ const loadDraft = async () => {
 
 // run loadDraft once
 loadDraft();
-// load photos
-loadPhotos();
 </script>

@@ -17,8 +17,12 @@ class LaporanAduanController extends Controller
         $dari = $request->input('dari');
         $sampai = $request->input('sampai');
 
-        $query = Aduan::with(['masyarakat.pengguna', 'kategoriAduan', 'statusAduan'])
-            ->orderBy('tanggal_lapor', 'desc');
+        $query = Aduan::with([
+            'masyarakat.pengguna', 
+            'kategoriAduan.opd', 
+            'statusAduan', 
+            'riwayatStatus.unitOpd'
+        ])->orderBy('tanggal_lapor', 'desc');
 
         // Filter berdasarkan date range
         if ($dari) {
@@ -55,12 +59,27 @@ class LaporanAduanController extends Controller
 
         // Format data laporan untuk pagination
         $laporanPengaduan = $aduanList->map(function ($aduan) {
+            $latestUnit = $aduan->riwayatStatus->sortByDesc('id')->first();
+            $unitName = $latestUnit && $latestUnit->unitOpd ? $latestUnit->unitOpd->nama_unit : 'Sekretariat';
+            
+            $opdName = $aduan->kategoriAduan && $aduan->kategoriAduan->opd 
+                ? $aduan->kategoriAduan->opd->pluck('nama_opd')->implode(', ') 
+                : '-';
+
+            $lokasi = $aduan->lokasi;
+            if (!$lokasi && $aduan->latitude && $aduan->longitude) {
+                $lokasi = "{$aduan->latitude}, {$aduan->longitude}";
+            }
+
             return [
                 'id' => $aduan->id,
-                'nama_lengkap' => $aduan->masyarakat->nama_lengkap ?? 'N/A',
+                'no_aduan' => $aduan->no_aduan ?? ('ADU-' . $aduan->tanggal_lapor->format('Ymd') . '-' . str_pad($aduan->id % 1000, 4, '0', STR_PAD_LEFT)),
                 'tanggal_lapor' => $aduan->tanggal_lapor,
-                'isi' => $aduan->isi_aduan ?? 'N/A',
-                'metode_bayar' => ($aduan->masyarakat?->status ?? 'Non Pegawai'),
+                'nama_lengkap' => $aduan->masyarakat->pengguna->nama_pengguna ?? $aduan->masyarakat->nama_lengkap ?? 'N/A',
+                'unit' => $unitName,
+                'kategori' => $aduan->kategoriAduan->nama_kategori ?? 'N/A',
+                'opd' => $opdName,
+                'lokasi' => $lokasi ?? '-',
                 'statusAduan' => $aduan->statusAduan?->nama_status ?? 'Diajukan'
             ];
         });
@@ -125,11 +144,17 @@ class LaporanAduanController extends Controller
 
         // Format data laporan untuk setiap aduan
         $laporanPengaduan = $aduanList->map(function ($aduan, $index) {
+            
+            $lokasi = $aduan->lokasi ?? $aduan->lokasi_aduan;
+            if (!$lokasi && $aduan->latitude && $aduan->longitude) {
+                $lokasi = "{$aduan->latitude}, {$aduan->longitude}";
+            }
+
             return [
                 'id' => $aduan->id,
                 'nomor_laporan' => $this->generateNomorLaporan($aduan->id, $aduan->tanggal_lapor),
                 'tanggal_lapor' => $aduan->tanggal_lapor,
-                'nama_lengkap' => $aduan->masyarakat?->pengguna?->nama_pengguna ?? 'N/A',
+                'nama_lengkap' => $aduan->masyarakat?->pengguna?->nama_pengguna ?? $aduan->masyarakat?->nama_lengkap ?? 'N/A',
                 'alamat' => $aduan->masyarakat?->alamat ?? 'N/A',
                 'nomor_telepon' => $aduan->masyarakat?->pengguna?->nomor_telepon ?? 'N/A',
                 'nomor_identitas' => $aduan->masyarakat?->nomor_identitas ?? 'N/A',
@@ -138,9 +163,9 @@ class LaporanAduanController extends Controller
                 'sumber_pengaduan' => 'Sistem Online',
                 'perihal' => substr($aduan->isi_aduan, 0, 100),
                 'uraian' => $aduan->isi_aduan,
-                'tempat_kejadian' => $aduan->lokasi_aduan ?? 'Jakarta',
+                'tempat_kejadian' => $lokasi ?? '-',
                 'tanggal_kejadian' => $aduan->tanggal_kejadian ?? $aduan->tanggal_lapor,
-                'waktu_kejadian' => $aduan->waktu_kejadian ?? '22:29:00',
+                'waktu_kejadian' => $aduan->waktu_kejadian ?? '00:00:00',
                 'kategori' => $aduan->kategoriAduan?->nama_kategori ?? 'N/A',
                 'status_aduan' => $aduan->statusAduan?->nama_status ?? 'Baru',
             ];
@@ -184,51 +209,55 @@ class LaporanAduanController extends Controller
      */
     public function show(Aduan $aduan)
     {
-        $aduan->load(['masyarakat.pengguna', 'kategoriAduan', 'statusAduan', 'riwayatStatus', 'tanggapan']);
 
-        // Format data laporan detail
-        $laporan = [
-            'id' => $aduan->id,
-            'nomor_laporan' => $this->generateNomorLaporan($aduan->id, $aduan->tanggal_lapor),
-            'tanggal_lapor' => $aduan->tanggal_lapor,
-            'nama_lengkap' => $aduan->masyarakat?->pengguna?->nama_pengguna ?? 'N/A',
-            'alamat' => $aduan->masyarakat?->alamat ?? 'N/A',
-            'nomor_telepon' => $aduan->masyarakat?->pengguna?->nomor_telepon ?? 'N/A',
-            'nomor_identitas' => $aduan->masyarakat?->nomor_identitas ?? 'N/A',
-            'status' => $aduan->masyarakat?->status ?? 'Non Pegawai',
-            'email' => $aduan->masyarakat?->pengguna?->email ?? 'N/A',
-            'sumber_pengaduan' => 'Sistem Online',
-            'perihal' => substr($aduan->isi_aduan, 0, 100),
-            'uraian' => $aduan->isi_aduan,
-            'lokasi' => $aduan->lokasi ?? 'Jakarta',
-            'latitude' => $aduan->latitude,
-            'longitude' => $aduan->longitude,
-            'kategori' => $aduan->kategoriAduan?->nama_kategori ?? 'N/A',
-            'status_aduan' => $aduan->statusAduan?->nama_status ?? 'Baru',
-            'akses_aduan' => $aduan->aksesAduan?->nama_akses ?? 'Publik',
-            'foto' => $aduan->foto,
-            'tanggal_selesai' => $aduan->tanggal_selesai,
-            'riwayat_status' => $aduan->riwayatStatus,
-            'tanggapan' => $aduan->tanggapan,
-            'masyarakat' => $aduan->masyarakat,
-        ];
-
-        // Get user data
-        $user = null;
-        $email = session('email');
-        if ($email) {
-            $user = DB::table('pengguna')
-                ->leftjoin('peran_pengguna', 'pengguna.id', '=', 'peran_pengguna.pengguna_id')
-                ->leftjoin('peran', 'peran_pengguna.peran_id', '=', 'peran.id')
-                ->where('pengguna.email', $email)
-                ->select('pengguna.*', 'peran.id as peran_id', 'peran.nama_peran')
-                ->first();
-        }
-
-        return Inertia::render('Admin/Laporan/DetailLaporanAduan', [
-            'user' => $user,
-            'laporan' => $laporan,
+         return Inertia::render('Admin/Laporan/FixLaporanAduan', [
+            'peran' => $aduan,
         ]);
+        // $aduan->load(['masyarakat.pengguna', 'kategoriAduan', 'statusAduan', 'riwayatStatus', 'tanggapan']);
+
+        // // Format data laporan detail
+        // $laporan = [
+        //     'id' => $aduan->id,
+        //     'nomor_laporan' => $this->generateNomorLaporan($aduan->id, $aduan->tanggal_lapor),
+        //     'tanggal_lapor' => $aduan->tanggal_lapor,
+        //     'nama_lengkap' => $aduan->masyarakat?->pengguna?->nama_pengguna ?? 'N/A',
+        //     'alamat' => $aduan->masyarakat?->alamat ?? 'N/A',
+        //     'nomor_telepon' => $aduan->masyarakat?->pengguna?->nomor_telepon ?? 'N/A',
+        //     'nomor_identitas' => $aduan->masyarakat?->nomor_identitas ?? 'N/A',
+        //     'status' => $aduan->masyarakat?->status ?? 'Non Pegawai',
+        //     'email' => $aduan->masyarakat?->pengguna?->email ?? 'N/A',
+        //     'sumber_pengaduan' => 'Sistem Online',
+        //     'perihal' => substr($aduan->isi_aduan, 0, 100),
+        //     'uraian' => $aduan->isi_aduan,
+        //     'lokasi' => $aduan->lokasi ?? 'Jakarta',
+        //     'latitude' => $aduan->latitude,
+        //     'longitude' => $aduan->longitude,
+        //     'kategori' => $aduan->kategoriAduan?->nama_kategori ?? 'N/A',
+        //     'status_aduan' => $aduan->statusAduan?->nama_status ?? 'Baru',
+        //     'akses_aduan' => $aduan->aksesAduan?->nama_akses ?? 'Publik',
+        //     'foto' => $aduan->foto,
+        //     'tanggal_selesai' => $aduan->tanggal_selesai,
+        //     'riwayat_status' => $aduan->riwayatStatus,
+        //     'tanggapan' => $aduan->tanggapan,
+        //     'masyarakat' => $aduan->masyarakat,
+        // ];
+
+        // // Get user data
+        // $user = null;
+        // $email = session('email');
+        // if ($email) {
+        //     $user = DB::table('pengguna')
+        //         ->leftjoin('peran_pengguna', 'pengguna.id', '=', 'peran_pengguna.pengguna_id')
+        //         ->leftjoin('peran', 'peran_pengguna.peran_id', '=', 'peran.id')
+        //         ->where('pengguna.email', $email)
+        //         ->select('pengguna.*', 'peran.id as peran_id', 'peran.nama_peran')
+        //         ->first();
+        // }
+
+        // return Inertia::render('Admin/Laporan/DetailLaporanAduan', [
+            // 'user' => $user,
+            // 'laporan' => $laporan,
+        // ]);
     }
 
     /**
@@ -257,10 +286,12 @@ class LaporanAduanController extends Controller
 
         // jika pengguna OPD, batasi hasil sesuai OPD
         $email = session('email');
+        $opd = null;
         if ($email) {
             $pengguna = DB::table('pengguna')->where('email', $email)->first();
             $opdId = DB::table('opd_pengguna')->where('pengguna_id', $pengguna?->id ?? 0)->value('opd_id');
             if ($opdId) {
+                $opd = \App\Models\Opd::find($opdId);
                 $query->whereHas('kategoriAduan', function ($q) use ($opdId) {
                     $q->whereHas('opd', function ($q2) use ($opdId) {
                         $q2->where('opd.id', $opdId);
@@ -280,6 +311,7 @@ class LaporanAduanController extends Controller
             'rows' => $rows,
             'dari' => $dari,
             'sampai' => $sampai,
+            'opd' => $opd,
         ])->render();
 
         // Require Dompdf; if not installed, return helpful JSON error
@@ -288,6 +320,10 @@ class LaporanAduanController extends Controller
         }
 
         $dompdf = new \Dompdf\Dompdf();
+        $options = $dompdf->getOptions();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);
+        
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

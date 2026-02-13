@@ -10,10 +10,11 @@ defineProps({
   stats: {
     type: Object,
     default: () => ({
-      totalAduan: 0,
       diajukan: 0,
+      diverifikasi: 0,
       diproses: 0,
       selesai: 0,
+      ditolak: 0,
     }),
   },
   assignedComplaints: {
@@ -46,11 +47,8 @@ const changeStatus = async (aduanId) => {
         <label style="display: block; margin: 10px 0; font-weight: bold;">Pilih Status Baru:</label>
         <select id="statusSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
           <option value="">-- Pilih Status --</option>
-          <option value="1">Diajukan</option>
-          <option value="2">Diverifikasi</option>
-          <option value="3">Diproses</option>
-          <option value="4">Selesai</option>
-          <option value="5">Ditolak</option>
+          <option value="5">Selesai</option>
+          <option value="3">Ditolak</option>
         </select>
         <textarea id="keteranganInput" placeholder="Keterangan (opsional)" style="width: 100%; padding: 8px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; font-family: Arial;"></textarea>
       </div>
@@ -130,9 +128,13 @@ const finishComplaint = async (aduanId) => {
 };
 
 const viewLaporan = (aduanId) => {
-  router.get(`/laporan-pengaduan?aduan=${aduanId}`);
+  // Mengarahkan ke route laporan.fixlaporan (FixLaporanAduan.vue)
+  router.get(`/laporan-pengaduan/${aduanId}`);
 };
+
+
 </script>
+
 
 <template>
   <Head title="Dashboard OPD" />
@@ -147,93 +149,45 @@ const viewLaporan = (aduanId) => {
     </div>
 
     <!-- Statistics Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <!-- Card 1: Total Assigned -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <!-- Card 1: Selesai -->
       <div
-        class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white"
+        class="bg-[#A3D95B] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-blue-100 text-sm font-medium">Total Ditugaskan</p>
-            <h3 class="text-3xl font-bold mt-2">{{ stats.totalAduan }}</h3>
-          </div>
-          <div class="bg-white bg-opacity-20 p-3 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-          </div>
-        </div>
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Selesai</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.selesai }}</h3>
       </div>
 
-      <!-- Card 2: Diajukan -->
+      <!-- Card 2: Diproses -->
       <div
-        class="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl shadow-lg p-6 text-white"
+        class="bg-[#A7D2FF] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-yellow-100 text-sm font-medium">Diajukan</p>
-            <h3 class="text-3xl font-bold mt-2">{{ stats.diajukan }}</h3>
-          </div>
-          <div class="bg-white bg-opacity-20 p-3 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-        </div>
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diproses</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.diproses }}</h3>
       </div>
 
-      <!-- Card 3: Diproses -->
+      <!-- Card 3: Diverifikasi -->
       <div
-        class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white"
+        class="bg-[#FF9F9F] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-purple-100 text-sm font-medium">Sedang Diproses</p>
-            <h3 class="text-3xl font-bold mt-2">{{ stats.diproses }}</h3>
-          </div>
-          <div class="bg-white bg-opacity-20 p-3 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          </div>
-        </div>
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diverifikasi</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.diverifikasi }}</h3>
       </div>
 
-      <!-- Card 4: Selesai -->
+      <!-- Card 4: Diajukan -->
       <div
-        class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white"
+        class="bg-[#FFD166] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-green-100 text-sm font-medium">Selesai</p>
-            <h3 class="text-3xl font-bold mt-2">{{ stats.selesai }}</h3>
-          </div>
-          <div class="bg-white bg-opacity-20 p-3 rounded-lg">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-        </div>
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diajukan</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.diajukan }}</h3>
+      </div>
+
+      <!-- Card 5: Ditolak -->
+      <div
+        class="bg-gradient-to-r from-gray-300 to-gray-100 rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
+      >
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Ditolak</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.ditolak }}</h3>
       </div>
     </div>
 
@@ -317,7 +271,7 @@ const viewLaporan = (aduanId) => {
                 {{ complaint.lokasi }}
               </td>
               <td class="px-6 py-4 text-sm text-gray-900">
-                {{ complaint.jenis }}
+                {{ complaint.nama_akses_aduan }}
               </td>
               <td class="px-6 py-4 text-sm text-gray-900">
                 {{ complaint.kategori }}
@@ -352,6 +306,8 @@ const viewLaporan = (aduanId) => {
                   </svg>
                 </button>
 
+                
+
                 <button
                   @click="changeStatus(complaint.id)"
                   class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
@@ -368,24 +324,9 @@ const viewLaporan = (aduanId) => {
                   </svg>
                 </button>
 
-                <button
-                  @click="finishComplaint(complaint.id)"
-                  class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
-                >
-                  <!-- Ikon Selesai -->
-                  <svg xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke-width="1.5" 
-                      stroke="currentColor" 
-                      class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" 
-                          d="M9 12.75l2.25 2.25L15 9.75m6.75 2.25a9.75 9.75 0 11-19.5 0 9.75 9.75 0 0119.5 0z" />
-                  </svg>
-                </button>
+                
 
-                <button
-                  @click="viewLaporan(complaint.id)"
+                <button @click="viewLaporan(complaint.id)"
                   class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
                   <!-- Ikon Cetak Laporan -->
@@ -399,6 +340,8 @@ const viewLaporan = (aduanId) => {
                           d="M6 9V3h12v6M6 18h12v3H6v-3zm0-9h12v6H6v-6z" />
                   </svg>
                 </button>
+               
+
                 </div>
 
 

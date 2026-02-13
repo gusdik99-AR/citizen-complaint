@@ -64,55 +64,40 @@ class OpdController extends Controller
             }
         }
 
-        // Get statistics
+        // Initialize stats with 0 for all statuses
         $stats = [
-            'totalAduan' => 0,
-            'diajukan' => 0,
-            'diproses' => 0,
-            'selesai' => 0,
+            'diajukan' => 0,      // ID 1
+            'diverifikasi' => 0,  // ID 2
+            'ditolak' => 0,       // ID 3
+            'diproses' => 0,      // ID 4
+            'selesai' => 0,       // ID 5
         ];
 
         $assignedComplaints = [];
 
         if ($opdId) {
-            // Total complaints for this OPD
-            $stats['totalAduan'] = DB::table('aduan')
+            // Fetch counts grouped by status_aduan_id for this OPD
+            $counts = DB::table('aduan')
                 ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
                 ->where('kategori_aduan_opd.opd_id', $opdId)
-                ->count();
+                ->select('aduan.status_aduan_id', DB::raw('count(*) as total'))
+                ->groupBy('aduan.status_aduan_id')
+                ->pluck('total', 'status_aduan_id');
 
-            // Assigned (status = "Ditugaskan")
-            $stats['diajukan'] = DB::table('aduan')
-                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('kategori_aduan_opd.opd_id', $opdId)
-                ->where('status_aduan.id', 2) // Ditugaskan
-                ->count();
+            // Map counts to stats array
+            $stats['diajukan'] = $counts->get(1, 0);
+            $stats['diverifikasi'] = $counts->get(2, 0);
+            $stats['ditolak'] = $counts->get(3, 0);
+            $stats['diproses'] = $counts->get(4, 0);
+            $stats['selesai'] = $counts->get(5, 0);
 
-            // In Progress (status = "Diproses")
-            $stats['diproses'] = DB::table('aduan')
-                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('kategori_aduan_opd.opd_id', $opdId)
-                ->where('status_aduan.id', 3) // Diproses
-                ->count();
-
-            // Completed (status = "Selesai")
-            $stats['selesai'] = DB::table('aduan')
-                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('kategori_aduan_opd.opd_id', $opdId)
-                ->where('status_aduan.id', 4) // Selesai
-                ->count();
-
-            // Get assigned complaints with kategori, jenis, lokasi
+            // Get assigned complaints (latest 10)
             $assignedComplaints = DB::table('aduan')
                 ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
                 ->join('masyarakat', 'aduan.masyarakat_id', '=', 'masyarakat.id')
                 ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->join('kategori_aduan', 'aduan.kategori_aduan_id', '=', 'kategori_aduan.id') // kategori
-                ->join('akses_aduan', 'aduan.akses_aduan_id', '=', 'akses_aduan.id')           // jenis
-                ->join('lokasi', 'aduan.lokasi_id', '=', 'lokasi.id')                          // lokasi
+                ->join('kategori_aduan', 'aduan.kategori_aduan_id', '=', 'kategori_aduan.id')
+                ->join('akses_aduan', 'aduan.akses_aduan_id', '=', 'akses_aduan.id')
                 ->where('kategori_aduan_opd.opd_id', $opdId)
                 ->select(
                     'aduan.id as id',
@@ -121,8 +106,8 @@ class OpdController extends Controller
                     'status_aduan.nama_status as status',
                     DB::raw('DATE(aduan.tanggal_dibuat) as tanggal'),
                     'kategori_aduan.nama_kategori as kategori',
-                    'akses_aduan.nama_akses_aduan as nama_akses_aduan',
-                    'lokasi.nama_lokasi as lokasi'
+                    'akses_aduan.nama_akses_aduan',
+                    'aduan.lokasi as lokasi'
                 )
                 ->orderBy('aduan.tanggal_dibuat', 'desc')
                 ->limit(10)
@@ -141,7 +126,7 @@ class OpdController extends Controller
      */
     public function wizard($aduanId)
     {
-        $aduan = Aduan::with(['masyarakat.pengguna', 'kategoriAduan', 'aksesAduan', 'statusAduan'])->find($aduanId);
+        $aduan = Aduan::with(['masyarakat.pengguna', 'kategoriAduan', 'aksesAduan', 'statusAduan', 'riwayatStatus.statusAduan', 'riwayatStatus.pengguna'])->find($aduanId);
         if (!$aduan) {
             abort(404);
         }
@@ -226,6 +211,37 @@ class OpdController extends Controller
         return response()->json(['success' => true, 'data' => $draft]);
     }
 
+    /**
+     * Get all photos from the aduan folder
+     */
+    public function getAduanPhotos($aduanId)
+    {
+        $aduan = Aduan::find($aduanId);
+        if (!$aduan) {
+            return response()->json(['success' => false, 'message' => 'Aduan not found', 'data' => []]);
+        }
+
+        $noAduan = $aduan->no_aduan;
+        $uploadDir = public_path("upload_aduan/{$noAduan}");
+
+        $photos = [];
+        if (is_dir($uploadDir)) {
+            $files = scandir($uploadDir);
+            $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
+
+                $fileExt = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                if (in_array($fileExt, $allowedExts)) {
+                    $photos[] = $file;
+                }
+            }
+        }
+
+        return response()->json(['success' => true, 'data' => $photos]);
+    }
+
     public function submitWizard(Request $request, $aduan)
     {
         $aduanModel = Aduan::find($aduan);
@@ -239,59 +255,48 @@ class OpdController extends Controller
         if ($email) {
             $pengguna = DB::table('pengguna')->where('email', $email)->first();
         }
-        $penggunaId = $pengguna->id ?? null;
+        $penggunaId = $pengguna ? $pengguna->id : null;
 
         $data = $request->all();
 
-        // Determine status id if provided (status_pengerjaan may contain nama_status)
+        // Determine status id if provided (status_pengerjaan may contain nama_status or id)
         $statusId = null;
         if (!empty($data['status']['status_pengerjaan'] ?? null)) {
             $statusName = $data['status']['status_pengerjaan'];
+            // Try to find by nama_status first, then by id
             $statusRow = StatusAduan::where('nama_status', $statusName)->first();
+            if (!$statusRow && is_numeric($statusName)) {
+                $statusRow = StatusAduan::find($statusName);
+            }
             if ($statusRow) $statusId = $statusRow->id;
+        }
+
+        // If no status provided, use current status of aduan or default to status id 1
+        if (!$statusId) {
+            $statusId = $aduanModel->status_aduan_id ?? 1;
         }
 
         // waktu status and catatan
         $waktuStatus = $data['waktu_status']['waktu_status'] ?? $data['waktu_status']['waktu'] ?? now();
-        $catatan = $data['waktu_status']['catatan_waktu'] ?? $data['waktu_status']['catatan'] ?? null;
-
-
+        $catatan = $data['waktu_status']['catatan_waktu'] ?? $data['waktu_status']['catatan'] ?? '';
 
         // unit kerja
         $unitOpdId = $data['assignment']['unit_kerja'] ?? null;
 
         // Update the aduan status in aduan table
-        if ($statusId) {
-            $aduanModel->update(['status_aduan_id' => $statusId]);
-        }
+        $aduanModel->update(['status_aduan_id' => $statusId]);
 
-        // Upsert riwayat_status_aduan keyed by aduan_id (one riwayat per aduan)
-        DB::table('riwayat_status_aduan')->updateOrInsert(
-            ['aduan_id' => $aduanModel->id],
-            [
-                'status_aduan_id' => $statusId,
-                'catatan' => $catatan,
-                'pengguna_id' => $penggunaId,
-                'unit_opd_id' => $unitOpdId,
-                'waktu_status_aduan' => $waktuStatus,
-
-                'tanggal_dibuat' => now(),
-                'tanggal_diubah' => now(),
-            ]
-        );
-
-        // Validasi input
-        $validated = $request->validate([
-            'tanggal_mulai'   => 'nullable|date',
-            'tanggal_target'  => 'nullable|date',
-            'tanggal_selesai' => 'nullable|date',
+        // Insert new riwayat_status_aduan for every update
+        DB::table('riwayat_status_aduan')->insert([
+            'aduan_id' => $aduanModel->id,
+            'status_aduan_id' => $statusId,
+            'catatan' => $catatan,
+            'pengguna_id' => $penggunaId,
+            'unit_opd_id' => $unitOpdId,
+            'waktu_status_aduan' => $waktuStatus,
+            'tanggal_dibuat' => now(),
+            'tanggal_diubah' => now(),
         ]);
-
-        // Ambil model berdasarkan ID
-        $aduan = Aduan::findOrFail($aduanModel->id);
-
-        // Update data
-        $aduan->update($validated);
 
         // Insert or update tanggapan_aduan for this pengguna if penggunaId exists
         if ($penggunaId) {
@@ -302,7 +307,7 @@ class OpdController extends Controller
         }
 
         // Optional: delete any draft saved for this aduan
-        DB::table('aduan_wizard')->where('aduan_id', $aduanModel->id)->delete();
+        // DB::table('aduan')->where('aduan_id', $aduanModel->id)->delete();    
 
         // Redirect OPD user back to their OPD dashboard with a success flash message
         return redirect()

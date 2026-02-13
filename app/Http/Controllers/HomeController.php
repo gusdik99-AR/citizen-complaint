@@ -179,48 +179,86 @@ class HomeController extends Controller
      */
     private function opdDashboard($penggunaId, $user): Response
     {
-        // Get OPD ID
-        $opdId = DB::table('opd_pengguna')
-            ->where('pengguna_id', $penggunaId)
-            ->value('opd_id');
+        // Get current OPD user from session
+        $email = session('email');
+        $user = null;
+        $opdId = null;
 
-        // Get stats for this OPD (based on kategori assignment)
-        $baseQuery = DB::table('aduan')
-            ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
-            ->where('kategori_aduan_opd.opd_id', $opdId);
+        if ($email) {
+            $user = DB::table('pengguna')->where('email', $email)->first();
+            if ($user) {
+                $opdAssignment = DB::table('opd_pengguna')
+                    ->where('pengguna_id', $user->id)
+                    ->first();
+                if ($opdAssignment) {
+                    $opdId = $opdAssignment->opd_id;
+                }
+            }
+        }
 
+        // Get statistics
         $stats = [
-            'totalAduan' => (clone $baseQuery)->count(),
-            'diajukan' => (clone $baseQuery)
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('status_aduan.nama_status', 'Diajukan')
-                ->count(),
-            'diproses' => (clone $baseQuery)
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('status_aduan.nama_status', 'Diproses')
-                ->count(),
-            'selesai' => (clone $baseQuery)
-                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-                ->where('status_aduan.nama_status', 'Selesai')
-                ->count(),
+            'totalAduan' => 0,
+            'diajukan' => 0,
+            'diproses' => 0,
+            'selesai' => 0,
         ];
 
-        // Get assigned complaints
-        $assignedComplaints = DB::table('aduan')
-            ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
-            ->join('masyarakat', 'aduan.masyarakat_id', '=', 'masyarakat.id')
-            ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
-            ->where('kategori_aduan_opd.opd_id', $opdId)
-            ->select(
-                'aduan.id as id',
-                DB::raw('LEFT(aduan.isi_aduan, 50) as judul'),
-                'masyarakat.nama_lengkap as pelapor',
-                'status_aduan.nama_status as status',
-                DB::raw('DATE(aduan.tanggal_dibuat) as tanggal')
-            )
-            ->orderBy('aduan.tanggal_dibuat', 'desc')
-            ->limit(10)
-            ->get();
+        $assignedComplaints = [];
+
+        if ($opdId) {
+            // Total complaints for this OPD
+            $stats['totalAduan'] = DB::table('aduan')
+                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
+                ->where('kategori_aduan_opd.opd_id', $opdId)
+                ->count();
+
+            // Assigned (status = "Ditugaskan")
+            $stats['diajukan'] = DB::table('aduan')
+                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
+                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
+                ->where('kategori_aduan_opd.opd_id', $opdId)
+                ->where('status_aduan.id', 2) // Ditugaskan
+                ->count();
+
+            // In Progress (status = "Diproses")
+            $stats['diproses'] = DB::table('aduan')
+                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
+                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
+                ->where('kategori_aduan_opd.opd_id', $opdId)
+                ->where('status_aduan.id', 3) // Diproses
+                ->count();
+
+            // Completed (status = "Selesai")
+            $stats['selesai'] = DB::table('aduan')
+                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
+                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
+                ->where('kategori_aduan_opd.opd_id', $opdId)
+                ->where('status_aduan.id', 4) // Selesai
+                ->count();
+
+            // Get assigned complaints with kategori, jenis, lokasi
+            $assignedComplaints = DB::table('aduan')
+                ->join('kategori_aduan_opd', 'aduan.kategori_aduan_id', '=', 'kategori_aduan_opd.kategori_aduan_id')
+                ->join('masyarakat', 'aduan.masyarakat_id', '=', 'masyarakat.id')
+                ->join('status_aduan', 'aduan.status_aduan_id', '=', 'status_aduan.id')
+                ->join('kategori_aduan', 'aduan.kategori_aduan_id', '=', 'kategori_aduan.id') // kategori
+                ->join('akses_aduan', 'aduan.akses_aduan_id', '=', 'akses_aduan.id')           // jenis
+                ->where('kategori_aduan_opd.opd_id', $opdId)
+                ->select(
+                    'aduan.id as id',
+                    DB::raw('LEFT(aduan.isi_aduan, 50) as judul'),
+                    'masyarakat.nama_lengkap as pelapor',
+                    'status_aduan.nama_status as status',
+                    DB::raw('DATE(aduan.tanggal_dibuat) as tanggal'),
+                    'kategori_aduan.nama_kategori as kategori',
+                    'akses_aduan.nama_akses_aduan as nama_akses_aduan',
+                    'aduan.lokasi as lokasi'
+                )
+                ->orderBy('aduan.tanggal_dibuat', 'desc')
+                ->limit(10)
+                ->get();
+        }
 
         return Inertia::render('OPD/Dashboard', [
             'user' => $user,

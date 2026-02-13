@@ -46,10 +46,10 @@
           </div>
           <div>
             <button
-              @click="filterLaporan"
-              class="w-full px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition"
+              @click="printAllLaporan"
+              class="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
             >
-              Tampilkan
+              Cetak Laporan
             </button>
           </div>
         </div>
@@ -79,30 +79,36 @@
           <table class="w-full">
             <thead class="bg-gray-100">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">No</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">NO</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Pelapor
+                  NO ADUAN
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Deskripsi
+                  TANGGAL LAPOR
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Lokasi
+                  PELAPOR
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Jenis
+                  UNIT
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Kategori
+                  KATEGORI
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
-                  Status
+                  OPD
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
+                  LOKASI
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">
+                  STATUS
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="laporanPengaduan.length === 0" class="border-t">
-                <td colspan="7" class="px-4 py-8 text-center text-gray-600">
+                <td colspan="9" class="px-4 py-8 text-center text-gray-600">
                   No data available in table
                 </td>
               </tr>
@@ -116,17 +122,23 @@
                   {{ index + (aduanList.from ? aduanList.from - 1 : 0) + 1 }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ laporan.no_aduan }}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ formatDate(laporan.tanggal_lapor) }}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">
                   {{ laporan.nama_lengkap }}
                 </td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ laporan.unit }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">
-                  {{ formatDate(laporan.isi) }}
+                  {{ laporan.kategori }}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">
-                  {{ formatDate(laporan.tanggal_diubah) }}
+                  {{ laporan.opd }}
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ laporan.nama_member }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">
-                  {{ laporan.metode_bayar }}
+                  {{ laporan.lokasi }}
                 </td>
                 <td class="px-4 py-3 text-sm">
                   <span
@@ -161,16 +173,6 @@
             >
           </div>
         </div>
-
-        <!-- Cetak Laporan Button -->
-        <div>
-          <button
-            @click="printAllLaporan"
-            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
-          >
-            Cetak Laporan
-          </button>
-        </div>
       </div>
     </component>
   </div>
@@ -180,7 +182,7 @@
 import StaffLayout from "@/Layouts/StaffLayout.vue";
 import OpdLayout from "@/Layouts/OpdLayout.vue";
 import { Link, router } from "@inertiajs/vue3";
-import { ref, computed } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import Swal from "sweetalert2";
 
 const props = defineProps({
@@ -192,6 +194,12 @@ const props = defineProps({
 
 const dateFrom = ref("");
 const dateTo = ref("");
+
+onMounted(() => {
+  const params = new URLSearchParams(window.location.search);
+  dateFrom.value = params.get("dari") || "";
+  dateTo.value = params.get("sampai") || "";
+});
 
 // Determine which layout to use based on user role
 const userLayout = computed(() => {
@@ -226,8 +234,16 @@ const filterLaporan = () => {
   const params = {};
   if (dateFrom.value) params.dari = dateFrom.value;
   if (dateTo.value) params.sampai = dateTo.value;
-  router.get("/laporan/laporanaduan", params, { replace: true });
+  router.get("/laporan/laporanaduan", params, { 
+    replace: true, 
+    preserveState: true, 
+    preserveScroll: true 
+  });
 };
+
+watch([dateFrom, dateTo], () => {
+  filterLaporan();
+});
 
 const printAllLaporan = async () => {
   try {

@@ -232,7 +232,11 @@
           <button
             type="submit"
             :disabled="
-              form.processing || !form.latitude || !form.longitude || form.foto.length === 0
+              form.processing || 
+              !form.latitude || 
+              !form.longitude || 
+              !form.lokasi || 
+              form.foto.length === 0
             "
             class="w-full bg-yellow-400 hover:bg-yellow-500 rounded-full py-3 font-semibold text-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
@@ -325,7 +329,7 @@ const removePhoto = index => {
   imagePreviews.value.splice(index, 1)
 }
 
-// Reverse geocoding async (jalan di background)
+// Reverse geocoding async - convert coordinates to address
 const reverseGeocode = async (lat, lon) => {
   try {
     const response = await fetch('/api/reverse-geocode', {
@@ -338,23 +342,60 @@ const reverseGeocode = async (lat, lon) => {
       },
       body: JSON.stringify({ lat, lon }),
     })
+    
     if (response.ok) {
       const data = await response.json()
-      if (data.success) {
+      if (data.success && data.address) {
+        // Berhasil mendapat alamat
         locationName.value = data.address
-        form.lokasi = data.address // update alamat lengkap
+        form.lokasi = data.address // ✅ Simpan NAMA ALAMAT ke database
+        return true
       } else {
-        locationName.value = 'Gagal mendapatkan alamat'
+        // API response tidak valid
+        const errorMsg = 'Gagal mendapatkan alamat dari koordinat'
+        locationName.value = errorMsg
+        form.lokasi = '' // Kosongkan agar validasi required berfungsi
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Error Geocoding',
+          text: errorMsg + '. Silakan coba lagi atau hubungi administrator.',
+          confirmButtonColor: '#3B82F6',
+        })
+        return false
       }
     } else {
-      locationName.value = 'Gagal mendapatkan alamat'
+      // HTTP error
+      const errorMsg = 'Server gagal memproses permintaan alamat'
+      locationName.value = errorMsg
+      form.lokasi = ''
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error Server',
+        text: errorMsg + '. Silakan coba lagi.',
+        confirmButtonColor: '#3B82F6',
+      })
+      return false
     }
   } catch (error) {
-    locationName.value = 'Error: ' + error.message
+    // Network error atau exception
+    console.error('Reverse geocoding error:', error)
+    const errorMsg = 'Koneksi ke server gagal: ' + error.message
+    locationName.value = errorMsg
+    form.lokasi = ''
+    
+    Swal.fire({
+      icon: 'error',
+      title: 'Error Koneksi',
+      text: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      confirmButtonColor: '#3B82F6',
+    })
+    return false
   }
 }
 
-const detectLocation = () => {
+const detectLocation = async () => {
   if (!navigator.geolocation) {
     Swal.fire({
       icon: 'error',
@@ -368,15 +409,15 @@ const detectLocation = () => {
   isDetectingLocation.value = true
 
   navigator.geolocation.getCurrentPosition(
-    position => {
+    async position => {
       form.latitude = position.coords.latitude
       form.longitude = position.coords.longitude
 
-      // tampilkan koordinat dulu
-      form.lokasi = `${form.latitude.toFixed(6)}, ${form.longitude.toFixed(6)}`
+      // Tunggu hingga alamat berhasil diambil dari API
+      await reverseGeocode(form.latitude, form.longitude)
 
-      // jalankan reverse geocoding di background
-      reverseGeocode(form.latitude, form.longitude)
+      // Jika reverse geocoding gagal, form.lokasi akan tetap kosong atau berisi pesan error
+      // Tidak perlu set koordinat di sini karena kita hanya ingin nama alamat
 
       isDetectingLocation.value = false
     },
