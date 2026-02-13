@@ -71,7 +71,7 @@ onUnmounted(() => {
 <template>
   <Head title="E-Lapor Pemkab Pemalang" />
 
-  <div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+  <div class="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
     <!-- Header / Navigation -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,7 +161,7 @@ onUnmounted(() => {
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       <!-- Hero Carousel -->
       <section
         v-if="heroImages.length > 0"
@@ -421,7 +421,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white mt-16 py-8">
+    <footer class="bg-gray-900 text-white mt-auto py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="text-gray-400 text-sm">
