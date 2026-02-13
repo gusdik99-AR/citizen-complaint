@@ -1,6 +1,6 @@
 <script>
 import { ref } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import StaffLayout from '@/Layouts/StaffLayout.vue'
 import Swal from "sweetalert2"
 
@@ -27,7 +27,11 @@ export default {
     recentComplaints: {
       type: Array,
       default: () => []
-    }
+    },
+    opds: {
+      type: Array,
+      default: () => []
+    },
   },
   data() {
     return {
@@ -54,6 +58,15 @@ export default {
   },
   mounted() {
     this.complaints = this.recentComplaints || []
+  },
+  watch: {
+    recentComplaints: {
+      handler(newVal) {
+        // Sinkronkan data tabel ketika props dari server berubah (misal setelah reload)
+        this.complaints = newVal || []
+      },
+      deep: true,
+    }
   },
   methods: {
     getStatusColor(status) {
@@ -96,8 +109,219 @@ export default {
         }
       })
     },
-    detailComplaint(complaint) {
-      Swal.fire("Detail Aduan", `Judul: ${complaint.judul}\nKategori: ${complaint.kategori}`, "info")
+    async detailComplaint(complaint) {
+      try {
+        const res = await fetch(`/api/aduan/${complaint.id}/riwayat-status`, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          credentials: 'same-origin',
+        })
+
+        if (!res.ok) {
+          throw new Error('Gagal mengambil riwayat status')
+        }
+
+        const data = await res.json()
+        const items = data.riwayat || []
+
+        if (!items.length) {
+          Swal.fire(
+            'Riwayat Status',
+            'Belum ada riwayat status untuk aduan ini.',
+            'info'
+          )
+          return
+        }
+
+        const html = `
+          <div class="text-left">
+            <div class="mb-3 text-sm text-gray-600">
+              <span class="font-semibold">No. Aduan:</span> #${complaint.id} - ${complaint.judul || ''}
+            </div>
+            <div class="border-t border-gray-200 pt-2 space-y-2">
+              ${items
+                .map(
+                  (item) => `
+                    <div class="py-2">
+                      <div class="flex justify-between items-center text-sm">
+                        <span class="font-semibold">${item.status}</span>
+                        <span class="text-xs text-gray-500">${new Date(
+                          item.waktu_status_aduan
+                        ).toLocaleString('id-ID')}</span>
+                      </div>
+                      ${
+                        item.catatan
+                          ? `<p class="text-sm text-gray-700 mt-1">${item.catatan}</p>`
+                          : ''
+                      }
+                      <p class="text-xs text-gray-400 mt-1">oleh ${item.petugas}</p>
+                    </div>
+                  `
+                )
+                .join('')}
+            </div>
+          </div>
+        `
+
+        Swal.fire({
+          title: 'Riwayat Status Aduan',
+          html,
+          width: 600,
+          confirmButtonText: 'Tutup',
+        })
+      } catch (e) {
+        Swal.fire('Error', 'Gagal menampilkan riwayat status aduan.', 'error')
+      }
+    },
+    async changeStatus(complaint) {
+      const result = await Swal.fire({
+        icon: 'question',
+        title: 'Ubah Status Aduan',
+        html: `<div class="text-left">
+          <p class="mb-3"><strong>No. Aduan:</strong> #${complaint.id}</p>
+          <p class="mb-4"><strong>Status Saat Ini:</strong> ${complaint.status || '-'}</p>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Status Baru</label>
+          <select id="statusSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400">
+            <option value="">-- Pilih Status --</option>
+            <option value="2">Diverifikasi</option>
+            <option value="3">Ditolak</option>
+            <option value="5">Selesai</option>
+          </select>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Ubah Status',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#EF4444',
+        didOpen: () => {
+          const selectElement = document.getElementById('statusSelect')
+          selectElement?.focus()
+        },
+        preConfirm: () => {
+          const newStatus = document.getElementById('statusSelect')?.value
+          if (!newStatus) {
+            Swal.showValidationMessage('Silakan pilih status terlebih dahulu')
+            return false
+          }
+          return { newStatus }
+        }
+      })
+
+      if (!result.isConfirmed || !result.value?.newStatus) return
+
+      try {
+        await router.put(`/manajemenaduan/daftaraduan/${complaint.id}/status`, {
+          status_aduan_id: result.value.newStatus,
+          keterangan: '',
+        })
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Status Diperbarui!',
+          text: 'Status aduan berhasil diubah.',
+          confirmButtonColor: '#3B82F6',
+        }).then(() => {
+          // Refresh data di dashboard (stats + tabel)
+          router.reload({ only: ['stats', 'recentComplaints'] })
+        })
+      } catch (e) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: 'Terjadi kesalahan saat mengubah status.',
+          confirmButtonColor: '#3B82F6',
+        })
+      }
+    },
+    async transferComplaint(complaint) {
+      if (!this.opds || !this.opds.length) {
+        Swal.fire('Info', 'Daftar OPD belum tersedia.', 'info')
+        return
+      }
+
+      const optionsHtml = this.opds
+        .map(opd => `<option value="${opd.id}">${opd.nama_opd}</option>`)
+        .join('')
+
+      const result = await Swal.fire({
+        title: 'Transfer Aduan ke OPD',
+        html: `
+          <div class="text-left">
+            <p class="mb-3 text-sm"><strong>No. Aduan:</strong> #${complaint.id} - ${complaint.judul || ''}</p>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Pilih OPD</label>
+            <select id="opdSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 mb-3">
+              <option value="">-- Pilih OPD --</option>
+              ${optionsHtml}
+            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+            <textarea id="catatanInput" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Catatan untuk OPD..."></textarea>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#EF4444',
+        didOpen: () => {
+          document.getElementById('opdSelect')?.focus()
+        },
+        preConfirm: () => {
+          const opdId = document.getElementById('opdSelect')?.value
+          const catatan = document.getElementById('catatanInput')?.value || ''
+          if (!opdId) {
+            Swal.showValidationMessage('Silakan pilih OPD terlebih dahulu')
+            return false
+          }
+          return { opdId, catatan }
+        }
+      })
+
+      if (!result.isConfirmed || !result.value?.opdId) return
+
+      try {
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]')
+        const csrf = tokenMeta?.getAttribute('content') || ''
+
+        const res = await fetch(`/api/aduan/${complaint.id}/transfer`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf,
+          },
+          body: JSON.stringify({
+            opd_id: result.value.opdId,
+            catatan: result.value.catatan,
+          }),
+          credentials: 'same-origin',
+        })
+
+        if (!res.ok) {
+          throw new Error('Gagal menyimpan transfer')
+        }
+
+        const data = await res.json()
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil',
+          text: data.message || 'Aduan berhasil ditransfer.',
+          confirmButtonColor: '#3B82F6',
+        }).then(() => {
+          // Refresh data di dashboard
+          router.reload({ only: ['stats', 'recentComplaints'] })
+        })
+      } catch (e) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: 'Terjadi kesalahan saat menyimpan transfer aduan.',
+          confirmButtonColor: '#3B82F6',
+        })
+      }
     },
     exportData() {
       const header = this.headers.join(",") + "\n"
@@ -295,9 +519,25 @@ export default {
               <td class="px-6 py-4 text-sm text-gray-600">{{ complaint.opd || '-' }}</td>
               <td class="px-6 py-4 text-sm text-gray-600">{{ complaint.tanggal }}</td>
               <td class="px-6 py-4 text-sm space-x-2">
-                <button @click="detailComplaint(complaint)" class="text-blue-600 hover:text-blue-800 font-medium transition">Detail</button>
-                <button @click="editComplaint(complaint)" class="text-purple-600 hover:text-purple-800 font-medium transition">Edit</button>
-                <button @click="deleteComplaint(complaint.id)" class="text-red-600 hover:text-red-800 font-medium transition">Hapus</button>
+                <button
+                  @click="detailComplaint(complaint)"
+                  class="text-blue-600 hover:text-blue-800 font-medium transition"
+                >
+                  Detail
+                </button>
+                <button
+                  @click="changeStatus(complaint)"
+                  class="text-purple-600 hover:text-purple-800 font-medium transition"
+                >
+                  Ubah Status
+                </button>
+                <button
+                  @click="transferComplaint(complaint)"
+                  class="text-green-600 hover:text-green-800 font-medium transition"
+                >
+                  Transfer
+                </button>
+                
               </td>
             </tr>
           </tbody>

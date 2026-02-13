@@ -311,6 +311,37 @@ class AduanController extends Controller
     }
 
     /**
+     * API: Get riwayat status aduan (JSON) untuk popup di dashboard admin
+     */
+    public function history($id)
+    {
+        // Pastikan aduan ada
+        $aduan = DB::table('aduan')->where('id', $id)->first();
+        if (!$aduan) {
+            return response()->json(['message' => 'Aduan tidak ditemukan'], 404);
+        }
+
+        $riwayatStatus = DB::table('riwayat_status_aduan')
+            ->join('status_aduan', 'riwayat_status_aduan.status_aduan_id', '=', 'status_aduan.id')
+            ->join('pengguna', 'riwayat_status_aduan.pengguna_id', '=', 'pengguna.id')
+            ->where('riwayat_status_aduan.aduan_id', $id)
+            ->select(
+                'riwayat_status_aduan.id',
+                'riwayat_status_aduan.waktu_status_aduan',
+                'riwayat_status_aduan.catatan',
+                'status_aduan.nama_status as status',
+                'pengguna.nama_pengguna as petugas'
+            )
+            ->orderBy('riwayat_status_aduan.waktu_status_aduan', 'desc')
+            ->get();
+
+        return response()->json([
+            'aduan_id' => $id,
+            'riwayat' => $riwayatStatus,
+        ]);
+    }
+
+    /**
      * Vote for a complaint
      */
     public function vote($id)

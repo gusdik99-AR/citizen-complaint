@@ -109,4 +109,52 @@ class DaftarAduanController extends Controller
 
         return redirect()->back()->with('success', 'Status aduan berhasil diperbarui');
     }
+
+    /**
+     * Transfer aduan ke OPD tertentu (simpan ke riwayat_status_aduan)
+     */
+    public function transfer(Request $request, Aduan $aduan)
+    {
+        $validated = $request->validate([
+            'opd_id' => 'required|integer|exists:opd,id',
+            'catatan' => 'nullable|string',
+        ]);
+
+        // Ambil pengguna_id dari sesi (fallback sederhana bila tidak ada)
+        $emailSess = session('email');
+        $namaSess = session('nama_pengguna');
+        $penggunaRow = DB::table('pengguna')->where('email', $emailSess)->orWhere('nama_pengguna', $namaSess)->first();
+        $penggunaId = $penggunaRow?->id ?? DB::table('pengguna')->value('id') ?? 1;
+
+        // Pastikan ada unit_opd untuk opd yang dipilih
+        $unit = \App\Models\UnitOpd::where('opd_id', $validated['opd_id'])->first();
+        if (!$unit) {
+            // Buat unit_opd minimal jika belum ada
+            $opd = DB::table('opd')->where('id', $validated['opd_id'])->first();
+            $unit = \App\Models\UnitOpd::create([
+                'opd_id' => $validated['opd_id'],
+                'nama_unit' => $opd ? 'Unit ' . $opd->nama_opd : 'Unit OPD ' . $validated['opd_id'],
+                'kode_unit' => null,
+                'nama_pengguna' => null,
+            ]);
+        }
+
+        // Simpan ke riwayat_status_aduan
+        \App\Models\RiwayatStatusAduan::create([
+            'aduan_id' => $aduan->id,
+            'status_aduan_id' => 2, // sesuai permintaan: set 2
+            'catatan' => $validated['catatan'] ?? '',
+            'pengguna_id' => $penggunaId,
+            'waktu_status_aduan' => now(),
+            'unit_opd_id' => $unit->id,
+        ]);
+
+        // Optionally update status utama aduan ke 2 juga
+        $aduan->update(['status_aduan_id' => 2]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Aduan berhasil ditransfer ke OPD yang dipilih.',
+        ]);
+    }
 }

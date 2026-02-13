@@ -162,3 +162,13 @@ Route::post('/aduan/{id}/vote', [AduanController::class, 'vote'])
 // Location API
 Route::post('/api/reverse-geocode', [LocationController::class, 'reverseGeocode'])
     ->name('api.reverse-geocode');
+
+// API: Riwayat status aduan (untuk popup detail di dashboard admin)
+Route::middleware(CheckAuth::class)->get('/api/aduan/{id}/riwayat-status', [AduanController::class, 'history'])
+    ->whereNumber('id')
+    ->name('api.aduan.riwayat-status');
+
+// API: Transfer aduan ke OPD (simpan ke riwayat_status_aduan)
+Route::middleware(CheckAuth::class)->post('/api/aduan/{aduan}/transfer', [DaftarAduanController::class, 'transfer'])
+    ->whereNumber('aduan')
+    ->name('api.aduan.transfer');

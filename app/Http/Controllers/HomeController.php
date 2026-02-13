@@ -318,10 +318,17 @@ class HomeController extends Controller
             ->limit(10)
             ->get();
 
+        // List OPD untuk transfer aduan
+        $opds = DB::table('opd')
+            ->select('id', 'nama_opd')
+            ->orderBy('nama_opd')
+            ->get();
+
         return Inertia::render('Admin/Dashboard', [
             'user' => $user,
             'stats' => $stats,
             'recentComplaints' => $recentComplaints,
+            'opds' => $opds,
         ]);
     }
 }
