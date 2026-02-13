@@ -382,7 +382,7 @@
             @click="submitWizard"
             class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg ml-auto"
           >
-            Selesaikan Aduan
+            Simpan Aduan
           </button>
         </div>
       </div>
@@ -475,8 +475,7 @@ const statusForm = ref({
 
 // Array statis untuk pilihan status
 const statusOptions = [
-  { id: "2", nama_status: "Menunggu" },
-  { id: "4", nama_status: "Sedang Dikerjakan" }
+  { id: "4", nama_status: "Diproses" }
 ];
 
 

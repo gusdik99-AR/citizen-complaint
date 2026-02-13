@@ -148,47 +148,46 @@ const viewLaporan = (aduanId) => {
     </div>
 
     <!-- Statistics Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
       <!-- Card 1: Selesai -->
-       <div
+      <div
+        class="bg-[#A3D95B] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
+      >
+        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Selesai</p>
+        <h3 class="text-3xl font-bold text-black">{{ stats.selesai }}</h3>
+      </div>
+
+      <!-- Card 2: Diproses -->
+      <div
         class="bg-[#A7D2FF] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
         <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diproses</p>
         <h3 class="text-3xl font-bold text-black">{{ stats.diproses }}</h3>
       </div>
-      <div
-        class="bg-[#A3D95B] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
-      >
-        <p class="text-gray-800 text-sm font-medium mb-1">Laporan Selesai</p>
-        <h3 class="text-3xl font-bold text-black">{{ stats.selesai_opd }}</h3>  
-      </div>
-
-      <!-- Card 2: Diproses -->
-      
 
       <!-- Card 3: Diverifikasi -->
-      <!-- <div
+      <div
         class="bg-[#FF9F9F] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
         <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diverifikasi</p>
         <h3 class="text-3xl font-bold text-black">{{ stats.diverifikasi }}</h3>
-      </div> -->
+      </div>
 
       <!-- Card 4: Diajukan -->
-      <!-- <div
+      <div
         class="bg-[#FFD166] rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
         <p class="text-gray-800 text-sm font-medium mb-1">Laporan Diajukan</p>
         <h3 class="text-3xl font-bold text-black">{{ stats.diajukan }}</h3>
-      </div> -->
+      </div>
 
-      <!-- Card 5: Ditolak
+      <!-- Card 5: Ditolak -->
       <div
         class="bg-gradient-to-r from-gray-300 to-gray-100 rounded-lg shadow border border-gray-200 text-center p-4 flex flex-col items-center justify-center transition hover:shadow-lg"
       >
         <p class="text-gray-800 text-sm font-medium mb-1">Laporan Ditolak</p>
         <h3 class="text-3xl font-bold text-black">{{ stats.ditolak }}</h3>
-      </div> -->
+      </div>
     </div>
 
     <!-- Assigned Complaints Table -->
@@ -253,10 +252,11 @@ const viewLaporan = (aduanId) => {
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr 
+            <tr
               v-for="(complaint, index) in assignedComplaints"
               :key="complaint.id"
-              class="hover:bg-gray-50 transition">
+              class="hover:bg-gray-50 transition"
+            >
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {{ index + 1 }}
               </td>
@@ -277,7 +277,7 @@ const viewLaporan = (aduanId) => {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
-                  :class="getStatusColor(complaint.status)" 
+                  :class="getStatusColor(complaint.status)"
                   class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                 >
                   {{ complaint.status }}
@@ -286,12 +286,11 @@ const viewLaporan = (aduanId) => {
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 {{ complaint.tanggal }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2" >
-                <div class="flex space-x-2" style="justify-content: center;">
+              <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                <div class="flex space-x-2">
 
                 <button
                   @click="wizard(complaint.id)"
-                   v-if="complaint.status !== 'Selesai OPD'" 
                   class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
                   <!-- Ikon Proses -->
@@ -306,11 +305,10 @@ const viewLaporan = (aduanId) => {
                   </svg>
                 </button>
 
-              
+                
 
                 <button
                   @click="changeStatus(complaint.id)"
-                  v-if="complaint.status !== 'Selesai OPD'"
                   class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
                 >
                   <!-- Ikon Rubah Status -->
@@ -325,9 +323,12 @@ const viewLaporan = (aduanId) => {
                   </svg>
                 </button>
 
-                <button @click="viewLaporan(complaint.id)" 
-                v-if="complaint.status !== 'Diproses'"
-                class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition flex items-center justify-center">
+                
+
+                <button @click="viewLaporan(complaint.id)"
+                  class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition flex items-center justify-center"
+                >
+                  <!-- Ikon Cetak Laporan -->
                   <svg xmlns="http://www.w3.org/2000/svg" 
                       fill="none" 
                       viewBox="0 0 24 24" 
@@ -341,6 +342,7 @@ const viewLaporan = (aduanId) => {
                
 
                 </div>
+
 
                 <!-- Mulai -->
                 
