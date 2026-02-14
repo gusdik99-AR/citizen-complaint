@@ -340,7 +340,7 @@ class AduanController extends Controller
                 'status_aduan.nama_status as status',
                 'pengguna.nama_pengguna as petugas'
             )
-            ->orderBy('riwayat_status_aduan.waktu_status_aduan', 'desc')
+            ->orderBy('riwayat_status_aduan.waktu_status_aduan', 'asc')
             ->get();
 
         return response()->json([

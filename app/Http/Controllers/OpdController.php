@@ -260,25 +260,23 @@ class OpdController extends Controller
 
         $data = $request->all();
 
-        // Determine status id if provided (status_pengerjaan may contain nama_status or id)
-        $statusId = null;
-        if (!empty($data['status']['status_pengerjaan'] ?? null)) {
-            $statusName = $data['status']['status_pengerjaan'];
-            // Try to find by nama_status first, then by id
-            $statusRow = StatusAduan::where('nama_status', $statusName)->first();
-            if (!$statusRow && is_numeric($statusName)) {
-                $statusRow = StatusAduan::find($statusName);
+        // Untuk OPD, status_aduan_id harus 4 (Diproses)
+        $statusId = 4;
+
+        // waktu status dan catatan, pastikan format timestamp
+        $rawWaktu = $data['waktu_status']['waktu_status'] ?? $data['waktu_status']['waktu'] ?? null;
+        if ($rawWaktu) {
+            // Jika input hanya tanggal, tambahkan waktu sekarang
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawWaktu)) {
+                $waktuStatus = \Carbon\Carbon::parse($rawWaktu . ' ' . now()->format('H:i:s'))
+                    ->timezone(config('app.timezone'))->format('Y-m-d H:i:s');
+            } else {
+                $waktuStatus = \Carbon\Carbon::parse($rawWaktu)
+                    ->timezone(config('app.timezone'))->format('Y-m-d H:i:s');
             }
-            if ($statusRow) $statusId = $statusRow->id;
+        } else {
+            $waktuStatus = now()->timezone(config('app.timezone'))->format('Y-m-d H:i:s');
         }
-
-        // If no status provided, use current status of aduan or default to status id 1
-        if (!$statusId) {
-            $statusId = $aduanModel->status_aduan_id ?? 1;
-        }
-
-        // waktu status and catatan
-        $waktuStatus = $data['waktu_status']['waktu_status'] ?? $data['waktu_status']['waktu'] ?? now();
         $catatan = $data['waktu_status']['catatan_waktu'] ?? $data['waktu_status']['catatan'] ?? '';
 
         // unit kerja

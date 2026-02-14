@@ -18,11 +18,12 @@ class LaporanAduanController extends Controller
         $sampai = $request->input('sampai');
 
         $query = Aduan::with([
-            'masyarakat.pengguna', 
-            'kategoriAduan.opd', 
-            'statusAduan', 
+            'masyarakat.pengguna',
+            'kategoriAduan.opd',
+            'statusAduan',
             'riwayatStatus.unitOpd'
-        ])->orderBy('tanggal_lapor', 'desc');
+        ])->whereIn('status_aduan_id', [2, 4, 5])
+            ->orderBy('tanggal_lapor', 'desc');
 
         // Filter berdasarkan date range
         if ($dari) {
@@ -61,9 +62,9 @@ class LaporanAduanController extends Controller
         $laporanPengaduan = $aduanList->map(function ($aduan) {
             $latestUnit = $aduan->riwayatStatus->sortByDesc('id')->first();
             $unitName = $latestUnit && $latestUnit->unitOpd ? $latestUnit->unitOpd->nama_unit : 'Sekretariat';
-            
-            $opdName = $aduan->kategoriAduan && $aduan->kategoriAduan->opd 
-                ? $aduan->kategoriAduan->opd->pluck('nama_opd')->implode(', ') 
+
+            $opdName = $aduan->kategoriAduan && $aduan->kategoriAduan->opd
+                ? $aduan->kategoriAduan->opd->pluck('nama_opd')->implode(', ')
                 : '-';
 
             $lokasi = $aduan->lokasi;
@@ -144,7 +145,7 @@ class LaporanAduanController extends Controller
 
         // Format data laporan untuk setiap aduan
         $laporanPengaduan = $aduanList->map(function ($aduan, $index) {
-            
+
             $lokasi = $aduan->lokasi ?? $aduan->lokasi_aduan;
             if (!$lokasi && $aduan->latitude && $aduan->longitude) {
                 $lokasi = "{$aduan->latitude}, {$aduan->longitude}";
@@ -210,10 +211,9 @@ class LaporanAduanController extends Controller
     public function show(Aduan $aduan)
     {
 
-         return Inertia::render('Admin/Laporan/FixLaporanAduan', [
+        return Inertia::render('Admin/Laporan/FixLaporanAduan', [
             'peran' => $aduan,
         ]);
-        
     }
 
     /**
@@ -279,7 +279,7 @@ class LaporanAduanController extends Controller
         $options = $dompdf->getOptions();
         $options->set('isRemoteEnabled', true);
         $dompdf->setOptions($options);
-        
+
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
